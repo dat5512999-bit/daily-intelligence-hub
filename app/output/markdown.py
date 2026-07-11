@@ -15,16 +15,22 @@ class MarkdownRenderer:
         return f"https://translate.google.com/translate?sl=auto&tl=zh-TW&u={quote(url, safe='')}"
 
     def render(self, report: DailyReport) -> str:
-        lines = ["# 台灣生活趨勢雷達", "", f"更新時間：{report.generated_at.astimezone().strftime('%Y-%m-%d %H:%M %Z')}", f"模式：{report.mode}", "", "## 今天只看這三件事", ""]
+        stock_count = sum(1 for cluster in report.clusters if cluster.category == "股票與市場")
+        lines = ["# 今天紅什麼情報雷達", "", f"更新時間：{report.generated_at.astimezone().strftime('%Y-%m-%d %H:%M %Z')}", f"模式：{report.mode}", f"持股雷達：{stock_count} 則", "", "## 今天先看這三件事", ""]
         for index, cluster in enumerate(report.clusters[:3], 1):
             lines.extend([f"### {index}. {cluster.title}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"{cluster.signal_label} ｜ {cluster.why_it_appeared}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
-        lines.extend(["## 其他趨勢（有空再看）", ""])
+        discovery = [cluster for cluster in report.clusters if cluster.category in {"社群冷門雷達", "搜尋趨勢", "短影音趨勢"} or cluster.signal_label in {"社群正在討論", "很多人正在搜尋"}]
+        if discovery:
+            lines.extend(["## 現在紅什麼／冷門苗頭", "這一區偏社群與搜尋訊號，可能比新聞更早出現，但也比較需要查證。", ""])
+            for index, cluster in enumerate(discovery[:5], 1):
+                lines.extend([f"### {index}. {cluster.title}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"來源：{'、'.join(cluster.sources)} ｜ {cluster.signal_label}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
+        lines.extend(["## 新聞與其他趨勢（有空再看）", ""])
         for index, cluster in enumerate(report.clusters, 1):
             lines.extend([f"### {index}. {cluster.title}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"來源：{'、'.join(cluster.sources)} ｜ {cluster.signal_label}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
         categories: dict[str, list[str]] = defaultdict(list)
         for cluster in report.clusters:
             categories[cluster.category].append(f"- [{cluster.title}]({cluster.primary_url})")
-        for category in ("AI", "GitHub", "科技", "商業", "全球重要事件", "健康生活", "美食生活", "旅遊生活", "娛樂文化", "影音生活", "生活話題", "職場生活", "Dcard 熱門", "搜尋趨勢", "短影音趨勢"):
+        for category in ("社群冷門雷達", "搜尋趨勢", "短影音趨勢", "AI／Codex", "遊戲與電競", "動漫與娛樂", "台中現在要注意", "台中好康與活動", "股票與市場", "AI", "GitHub", "科技", "商業", "全球重要事件", "健康生活", "美食生活", "旅遊生活", "娛樂文化", "影音生活", "生活話題", "職場生活", "Dcard 熱門"):
             if categories[category]:
                 lines.extend([f"## {category}", *categories[category], ""])
         if report.clusters:

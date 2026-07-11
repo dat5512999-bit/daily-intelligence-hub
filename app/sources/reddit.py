@@ -15,6 +15,11 @@ class RedditSource:
     _feeds = (
         ("https://www.reddit.com/r/technology/.rss", "科技"),
         ("https://www.reddit.com/r/artificial/.rss", "AI"),
+        ("https://www.reddit.com/r/OpenAI/.rss", "AI／Codex"),
+        ("https://www.reddit.com/r/gaming/.rss", "遊戲與電競"),
+        ("https://www.reddit.com/r/pcgaming/.rss", "遊戲與電競"),
+        ("https://www.reddit.com/r/Palworld/.rss", "遊戲與電競"),
+        ("https://www.reddit.com/r/anime/.rss", "動漫與娛樂"),
         ("https://www.reddit.com/r/travel/.rss", "旅遊生活"),
         ("https://www.reddit.com/r/food/.rss", "美食生活"),
         ("https://www.reddit.com/r/health/.rss", "健康生活"),

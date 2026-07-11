@@ -8,6 +8,8 @@ from app.domain.models import DailyReport, IntelligenceItem
 from app.infrastructure.interests import InterestProfile
 from app.domain.ports import Source
 
+DISCOVERY_SOURCES = {"Dcard", "Google 熱門搜尋", "TikTok", "Reddit"}
+
 
 class GenerateDailyReport:
     def __init__(self, sources: list[Source], profile: InterestProfile | None = None) -> None:
@@ -23,5 +25,8 @@ class GenerateDailyReport:
             except Exception as error:  # Source isolation is an explicit product requirement.
                 errors.append(f"{source.name}: {error}")
         cleaned = filter_items(collected)
-        relevant = [item for item in cleaned if self._profile is None or self._profile.matches(item)]
+        relevant = [
+            item for item in cleaned
+            if self._profile is None or self._profile.matches(item) or item.source in DISCOVERY_SOURCES
+        ]
         return DailyReport(clusters=tuple(rank_items(relevant)), source_errors=tuple(errors), mode=mode)

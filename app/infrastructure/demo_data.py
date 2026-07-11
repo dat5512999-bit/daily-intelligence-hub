@@ -16,5 +16,7 @@ class DemoSource:
             IntelligenceItem("無職轉生相關動畫消息與社群討論", "https://example.com/anime", "Google News", now - timedelta(hours=4), "動漫迷正在討論作品後續消息與最新內容。", 0, "動漫與娛樂"),
             IntelligenceItem("台中市區火災影響周邊交通", "https://example.com/taichung", "Google News", now - timedelta(hours=1), "在地突發事件可能影響附近安全與交通，出門前值得確認。", 0, "台中現在要注意"),
             IntelligenceItem("台中週末展覽與限時活動整理", "https://example.com/events", "Dcard", now - timedelta(hours=6), "近期有展覽、演唱會與限時活動可安排週末行程。", 950, "台中好康與活動"),
-            IntelligenceItem("美股反彈與台股休市的市場焦點", "https://example.com/stocks", "Google News", now - timedelta(hours=5), "美股變化可能影響下一個台股交易日的市場情緒；這不是買賣建議。", 0, "股票與市場"),
+            IntelligenceItem("聯電、群創與機器人概念股成為台股討論焦點", "https://example.com/stocks", "Google News", now - timedelta(hours=5), "這類消息和你目前關注的持股、ETF 或概念股有關，適合先知道但不要直接當買賣建議。", 0, "股票與市場"),
+            IntelligenceItem("大樹藥局分店有人在換陀螺", "https://example.com/local-deal", "Dcard", now - timedelta(hours=7), "這種地方小情報通常不會變成大新聞，但可能是生活圈裡很實用的限時話題。", 260, "社群冷門雷達"),
+            IntelligenceItem("某款小眾手遊角色突然被大量搜尋", "https://example.com/search-trend", "Google 熱門搜尋", now - timedelta(hours=8), "搜尋量上升代表有人開始好奇，可能來自活動、實況主或社群迷因。", 0, "搜尋趨勢"),
         ]

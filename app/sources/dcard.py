@@ -27,5 +27,17 @@ class DcardSource:
 
     @staticmethod
     def _category(forum: str) -> str:
-        mapping = {"美食": "美食生活", "旅遊": "旅遊生活", "感情": "生活話題", "穿搭": "生活話題", "彩妝": "生活話題", "追星": "娛樂文化", "閒聊": "生活話題", "工作": "職場生活"}
-        return next((category for keyword, category in mapping.items() if keyword in forum), "Dcard 熱門")
+        mapping = {
+            "遊戲": "遊戲與電競",
+            "動漫": "動漫與娛樂",
+            "追星": "娛樂文化",
+            "美食": "台中好康與活動",
+            "旅遊": "台中好康與活動",
+            "穿搭": "社群冷門雷達",
+            "彩妝": "社群冷門雷達",
+            "感情": "社群冷門雷達",
+            "閒聊": "社群冷門雷達",
+            "有趣": "社群冷門雷達",
+            "工作": "職場生活",
+        }
+        return next((category for keyword, category in mapping.items() if keyword in forum), "社群冷門雷達")

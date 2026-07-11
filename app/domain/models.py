@@ -57,6 +57,9 @@ class IntelligenceCluster:
     def attention_label(self) -> str:
         """Tell a curious but busy reader why an item may matter personally."""
         text = f"{self.title} {self.summary}".lower()
+        watched_stocks = ("聯電", "臻鼎", "0050", "元大台灣50", "精材", "群創", "星宇", "星宇航空", "機器人")
+        if any(word.lower() in text for word in watched_stocks):
+            return "持股雷達：和你目前關注的股票或概念股有關"
         if any(word in text for word in ("失火", "火災", "地震", "停電", "事故", "颱風", "淹水", "封路")):
             return "在地突發：可能影響安全、交通或行程"
         if any(word in text for word in ("美股", "台股", "股市", "匯率", "利率", "油價", "反彈", "休市")):
