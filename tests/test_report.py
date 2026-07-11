@@ -12,6 +12,7 @@ from app.output.html_preview import HtmlPreviewRenderer
 from app.output.markdown import MarkdownRenderer
 from app.output.assets import APP_ICON_SVG, WEB_MANIFEST
 from app.infrastructure.interests import load_interest_profile
+from app.sources.dcard import DcardSource
 from app.sources.youtube import YouTubeSource
 
 
@@ -108,6 +109,8 @@ class ReportTests(unittest.TestCase):
         self.assertIn("manifest.webmanifest", preview)
         self.assertIn("app-icon.svg", preview)
         self.assertIn("今天紅什麼", preview)
+        self.assertIn("category-tabs", preview)
+        self.assertIn("生活流行", preview)
         self.assertIn("台灣時間", preview)
         self.assertNotIn("UTC", preview)
         self.assertIn("則持股", preview)
@@ -136,6 +139,18 @@ class ReportTests(unittest.TestCase):
         self.assertIn("幻獸帕魯 卡牌消息", preview)
         self.assertIn("Re:0 周邊活動", preview)
         self.assertIn("鬼滅之刃 電影消息", preview)
+
+    def test_dcard_lifestyle_mapping_and_taichung_exception(self) -> None:
+        self.assertEqual(DcardSource._category("閒聊", "最近小紅書流行餐廳", ""), "生活流行")
+        self.assertEqual(DcardSource._category("美食", "台中一中街新餐廳", "限時活動"), "台中好康與活動")
+
+    def test_profile_catches_new_game_interests(self) -> None:
+        profile = load_interest_profile()
+        now = datetime.now(timezone.utc)
+        forza = IntelligenceItem("Forza Horizon 6 地平線6 傳聞", "https://example.com/forza", "Google News", now, category="遊戲與電競")
+        warcraft = IntelligenceItem("魔獸爭霸 寒冰霸權 玩家回流", "https://example.com/warcraft", "Google News", now, category="遊戲與電競")
+        self.assertTrue(profile.matches(forza))
+        self.assertTrue(profile.matches(warcraft))
 
     def test_youtube_source_is_safe_without_configured_channels(self) -> None:
         """An empty starter configuration must not block a Live report."""
