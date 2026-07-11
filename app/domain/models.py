@@ -94,3 +94,30 @@ class DailyReport:
     clusters: tuple[IntelligenceCluster, ...] = ()
     source_errors: tuple[str, ...] = ()
     mode: str = "demo"
+
+    @property
+    def source_count(self) -> int:
+        """Count the distinct sources that actually made it into the report."""
+        return len({source for cluster in self.clusters for source in cluster.sources})
+
+    @property
+    def health_label(self) -> str:
+        """Never present a thin or partially failed report as fully healthy."""
+        if not self.clusters:
+            return "資料不足"
+        if self.source_count < 3:
+            return "資訊來源不足"
+        if self.source_errors:
+            return "部分來源受限"
+        return "來源正常"
+
+    @property
+    def health_note(self) -> str:
+        """Give the mobile reader a plain-language next action."""
+        if not self.clusters:
+            return "本次沒有足夠的即時資料；請稍後再更新，不會以範例內容冒充。"
+        if self.source_count < 3:
+            return "本次只取得少量來源，先當速報參考；下一輪會自動再抓。"
+        if self.source_errors:
+            return "部分社群來源暫時受限；其餘公開來源仍已完成整理。"
+        return "多個公開來源已完成整理；社群話題仍請開啟原文確認。"

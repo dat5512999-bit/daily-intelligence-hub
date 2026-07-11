@@ -18,6 +18,7 @@ from app.sources.interest_news import InterestNewsSource
 from app.sources.reddit import RedditSource
 from app.sources.dcard import DcardSource
 from app.sources.tiktok import TikTokTrendsSource
+from app.sources.taiwan_events import TaiwanTourismEventsSource
 from app.sources.trends import GoogleTrendsSource
 from app.sources.youtube import YouTubeSource
 
@@ -34,7 +35,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     profile = load_interest_profile()
-    sources = [DemoSource()] if args.demo else [InterestNewsSource(profile), GitHubTrendingSource(), RedditSource(), HackerNewsSource(), YouTubeSource(), DcardSource(), GoogleTrendsSource(), TikTokTrendsSource()]
+    sources = [DemoSource()] if args.demo else [InterestNewsSource(profile), TaiwanTourismEventsSource(), GitHubTrendingSource(), RedditSource(), HackerNewsSource(), YouTubeSource(), DcardSource(), GoogleTrendsSource(), TikTokTrendsSource()]
     report = GenerateDailyReport(sources, profile).run(mode="demo" if args.demo else "live")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     markdown_path = args.output_dir / "Daily_Report.md"

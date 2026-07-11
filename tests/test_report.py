@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 from datetime import datetime, timezone
+from unittest.mock import patch
 
 from app.analyzer.filter import filter_items
 from app.analyzer.ranking import rank_items
@@ -13,6 +14,8 @@ from app.output.markdown import MarkdownRenderer
 from app.output.assets import APP_ICON_SVG, WEB_MANIFEST
 from app.infrastructure.interests import load_interest_profile
 from app.sources.dcard import DcardSource
+from app.sources.interest_news import InterestNewsSource
+from app.sources.taiwan_events import TaiwanTourismEventsSource
 from app.sources.youtube import YouTubeSource
 
 
@@ -93,6 +96,46 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(report.clusters)
         self.assertEqual(len(report.source_errors), 1)
 
+    def test_live_report_with_only_one_source_is_never_called_healthy(self) -> None:
+        now = datetime.now(timezone.utc)
+        item = IntelligenceItem("只剩一個媒體來源", "https://example.com/news", "Google News", now, category="AI／Codex")
+        cluster = rank_items([item])[0]
+        report = type("Report", (), {
+            "generated_at": now,
+            "clusters": (cluster,),
+            "source_errors": (),
+            "mode": "live",
+            "source_count": 1,
+            "health_label": "資訊來源不足",
+            "health_note": "本次只取得少量來源，先當速報參考；下一輪會自動再抓。",
+        })()
+        preview = HtmlPreviewRenderer().render(report)
+        self.assertIn("資訊來源不足", preview)
+        self.assertNotIn("即時連線", preview)
+
+    def test_report_health_identifies_partial_source_failure(self) -> None:
+        report = GenerateDailyReport([DemoSource(), FailingSource()]).run("live")
+        self.assertEqual(report.health_label, "部分來源受限")
+        self.assertGreaterEqual(report.source_count, 3)
+
+    def test_workflow_runs_hourly_away_from_the_top_of_the_hour(self) -> None:
+        from pathlib import Path
+
+        workflow = Path(".github/workflows/daily-report.yml").read_text(encoding="utf-8")
+        self.assertIn('cron: "17 * * * *"', workflow)
+
+    def test_official_lifestyle_event_source_extracts_events_not_navigation(self) -> None:
+        html = """
+        <a href="/nav">觀光活動</a>
+        <a href="/event/one">2026 台中夏日音樂市集</a>
+        <a href="/event/two">台灣國際熱氣球嘉年華</a>
+        """
+        with patch("app.sources.taiwan_events.get_text", return_value=html):
+            items = TaiwanTourismEventsSource().fetch()
+        self.assertEqual(len(items), 2)
+        self.assertEqual(items[0].source, "觀光署活動")
+        self.assertEqual(items[0].category, "台中好康與活動")
+
     def test_discovery_source_can_bypass_interest_terms(self) -> None:
         report = GenerateDailyReport([DiscoveryOnlySource()], load_interest_profile()).run("demo")
         self.assertEqual(report.clusters[0].category, "社群冷門雷達")
@@ -132,7 +175,15 @@ class ReportTests(unittest.TestCase):
             IntelligenceItem("鬼滅之刃 電影消息", "https://example.com/anime-2", "Google News", now, category="動漫與娛樂"),
         ]
         clusters = tuple(rank_items(items, limit=5))
-        preview = HtmlPreviewRenderer().render(type("Report", (), {"generated_at": now, "clusters": clusters, "source_errors": (), "mode": "demo"})())
+        preview = HtmlPreviewRenderer().render(type("Report", (), {
+            "generated_at": now,
+            "clusters": clusters,
+            "source_errors": (),
+            "mode": "demo",
+            "source_count": 1,
+            "health_label": "來源正常",
+            "health_note": "這是測試報告。",
+        })())
 
         self.assertIn("幻獸帕魯 1.0 更新", preview)
         self.assertIn("Palworld Game Pass 消息", preview)
@@ -163,6 +214,31 @@ class ReportTests(unittest.TestCase):
         unrelated = IntelligenceItem("一般居家料理", "https://example.com/food", "Google News", now, category="美食生活")
         self.assertTrue(profile.matches(relevant))
         self.assertFalse(profile.matches(unrelated))
+
+    def test_google_news_keeps_good_results_when_one_query_is_malformed(self) -> None:
+        """One broken RSS description must not wipe all other interest results."""
+        profile = load_interest_profile()
+        good_feed = """<?xml version='1.0'?><rss><channel><item><title>GTA 6 新消息</title><link>https://example.com/gta</link><pubDate>Fri, 11 Jul 2026 01:00:00 GMT</pubDate></item></channel></rss>"""
+        calls = 0
+
+        def fake_get_text(_: str) -> str:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise ValueError("bad response")
+            return good_feed
+
+        with patch("app.sources.interest_news.get_text", side_effect=fake_get_text):
+            items = InterestNewsSource(profile).fetch()
+
+        self.assertTrue(items)
+        self.assertIn("GTA 6 新消息", [item.title for item in items])
+
+    def test_google_news_rotates_queries_without_dropping_profile_topics(self) -> None:
+        first = InterestNewsSource._rotated_queries(("A", "B", "C", "D", "E", "F"), 0)
+        next_hour = InterestNewsSource._rotated_queries(("A", "B", "C", "D", "E", "F"), 1)
+        self.assertEqual(first, ["A", "B", "C", "D", "E"])
+        self.assertEqual(next_hour, ["B", "C", "D", "E", "F"])
 
 
 if __name__ == "__main__":

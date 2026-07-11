@@ -17,7 +17,7 @@ class MarkdownRenderer:
 
     def render(self, report: DailyReport) -> str:
         stock_count = sum(1 for cluster in report.clusters if cluster.category == "股票與市場")
-        lines = ["# 今天紅什麼情報雷達", "", f"更新時間：{format_taiwan_time(report.generated_at)}", f"模式：{report.mode}", f"持股雷達：{stock_count} 則", "", "## 今天先看這三件事", ""]
+        lines = ["# 今天紅什麼情報雷達", "", f"更新時間：{format_taiwan_time(report.generated_at)}", f"模式：{report.mode}", f"資料狀態：{report.health_label}（{report.health_note}）", f"持股雷達：{stock_count} 則", "", "## 今天先看這三件事", ""]
         for index, cluster in enumerate(report.clusters[:3], 1):
             lines.extend([f"### {index}. {cluster.title}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"{cluster.signal_label} ｜ {cluster.why_it_appeared}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
         discovery = [cluster for cluster in report.clusters if cluster.category in {"社群冷門雷達", "搜尋趨勢", "短影音趨勢"} or cluster.signal_label in {"社群正在討論", "很多人正在搜尋"}]

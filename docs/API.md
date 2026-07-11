@@ -9,3 +9,5 @@ class Source(Protocol):
 ```
 
 來源輸出會被正規化、過濾、聚類、排名後交給 renderer。
+
+`DailyReport` 另提供 `source_count`、`health_label`、`health_note`，輸出層必須使用這些欄位提示資料品質，不得自行假設 Live Mode 就代表全部來源成功。

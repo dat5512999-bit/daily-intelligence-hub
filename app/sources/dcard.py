@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 
 from app.domain.models import IntelligenceItem
@@ -12,9 +13,7 @@ class DcardSource:
     name = "Dcard"
 
     def fetch(self) -> list[IntelligenceItem]:
-        import json
-
-        posts = json.loads(get_text("https://www.dcard.tw/service/api/v2/posts?popular=true&limit=60"))
+        posts = self._fetch_popular_posts()
         result: list[IntelligenceItem] = []
         for post in posts:
             title = str(post.get("title") or "").strip()
@@ -25,6 +24,27 @@ class DcardSource:
             engagement = int(post.get("likeCount") or 0) + int(post.get("commentCount") or 0) * 3
             result.append(IntelligenceItem(title, f"https://www.dcard.tw/f/{post.get('forumAlias', '')}/p/{post.get('id', '')}", self.name, datetime.fromisoformat(str(post.get("createdAt")).replace("Z", "+00:00")) if post.get("createdAt") else datetime.now(timezone.utc), excerpt, engagement, category))
         return result
+
+    @staticmethod
+    def _fetch_popular_posts() -> list[dict[str, object]]:
+        """Try public Dcard endpoints without requiring a login or API key.
+
+        Dcard sometimes blocks the shared IP address used by GitHub Actions.
+        The fallback endpoint gives the report another legitimate chance, but we
+        intentionally do not bypass a block with cookies, login, or scraping.
+        """
+        endpoints = (
+            "https://www.dcard.tw/service/api/v2/posts?popular=true&limit=60",
+            "https://www.dcard.tw/_api/posts?popular=true&limit=60",
+        )
+        for endpoint in endpoints:
+            try:
+                data = json.loads(get_text(endpoint, headers={"Referer": "https://www.dcard.tw/"}))
+                if isinstance(data, list):
+                    return data
+            except (OSError, ValueError, TypeError):
+                continue
+        raise RuntimeError("Dcard 暫時拒絕 GitHub 的公開讀取，已略過；不會用登入或繞過方式抓取。")
 
     @staticmethod
     def _category(forum: str, title: str = "", excerpt: str = "") -> str:
