@@ -37,6 +37,13 @@ class ReportTests(unittest.TestCase):
         valid = IntelligenceItem("Valid", "https://example.com", "Test", now)
         self.assertEqual(filter_items([valid, valid, IntelligenceItem("", "https://bad", "Test", now)]), [valid])
 
+    def test_filter_removes_low_context_trends(self) -> None:
+        now = datetime.now(timezone.utc)
+        valid = IntelligenceItem("鬼滅之刃 新電影消息", "https://example.com/anime", "Google News", now)
+        meet = IntelligenceItem("meet", "https://example.com/meet", "Google 熱門搜尋", now)
+        tag = IntelligenceItem("TikTok 熱門標籤：#fff", "https://example.com/tiktok", "TikTok", now)
+        self.assertEqual(filter_items([valid, meet, tag]), [valid])
+
     def test_ranking_rewards_cross_source_confirmation(self) -> None:
         now = datetime.now(timezone.utc)
         first = IntelligenceItem("Open source AI launch today", "https://one.example", "GitHub", now, engagement=10)
@@ -96,6 +103,8 @@ class ReportTests(unittest.TestCase):
         self.assertIn("<!doctype html>", preview)
         self.assertIn("今天紅什麼", preview)
         self.assertIn("則持股", preview)
+        self.assertIn("多看這類", preview)
+        self.assertIn("少看這類", preview)
         self.assertIn("情報安全提示", preview)
         self.assertIn("繁中翻譯", preview)
         self.assertIn("白話重點", markdown)

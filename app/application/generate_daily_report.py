@@ -29,4 +29,4 @@ class GenerateDailyReport:
             item for item in cleaned
             if self._profile is None or self._profile.matches(item) or item.source in DISCOVERY_SOURCES
         ]
-        return DailyReport(clusters=tuple(rank_items(relevant)), source_errors=tuple(errors), mode=mode)
+        return DailyReport(clusters=tuple(rank_items(relevant, limit=18)), source_errors=tuple(errors), mode=mode)

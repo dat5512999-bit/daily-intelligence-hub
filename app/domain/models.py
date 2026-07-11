@@ -60,6 +60,9 @@ class IntelligenceCluster:
         watched_stocks = ("聯電", "臻鼎", "0050", "元大台灣50", "精材", "群創", "星宇", "星宇航空", "機器人")
         if any(word.lower() in text for word in watched_stocks):
             return "持股雷達：和你目前關注的股票或概念股有關"
+        anime_terms = ("re:zero", "從零開始", "無職轉生", "轉生史萊姆", "影之強者", "海賊王", "犬夜叉", "火影忍者", "我獨自升級", "實力至上主義", "盾之勇者", "進擊的巨人", "鬼滅之刃", "宮崎駿", "吉卜力", "周邊", "聖地巡禮")
+        if any(word in text for word in anime_terms):
+            return "動漫雷達：可能有新消息、周邊、聯動或聖地巡禮"
         if any(word in text for word in ("失火", "火災", "地震", "停電", "事故", "颱風", "淹水", "封路")):
             return "在地突發：可能影響安全、交通或行程"
         if any(word in text for word in ("美股", "台股", "股市", "匯率", "利率", "油價", "反彈", "休市")):

@@ -12,7 +12,7 @@ from app.domain.models import IntelligenceCluster, IntelligenceItem
 
 STOP_WORDS = {"the", "a", "an", "and", "for", "with", "from", "this", "that", "how", "what", "new", "to", "of", "in", "on", "is"}
 CATEGORY_BONUS = {"台中現在要注意": 30, "AI／Codex": 25, "社群冷門雷達": 24, "搜尋趨勢": 23, "短影音趨勢": 22, "遊戲與電競": 20, "動漫與娛樂": 18, "股票與市場": 18, "台中好康與活動": 15}
-CATEGORY_LIMIT = 3
+CATEGORY_LIMIT = 5
 
 
 def _key(title: str) -> frozenset[str]:
@@ -26,7 +26,7 @@ def _similar(left: frozenset[str], right: frozenset[str]) -> bool:
     return bool(left and right and len(left & right) / len(left | right) >= 0.35)
 
 
-def rank_items(items: list[IntelligenceItem], limit: int = 10) -> list[IntelligenceCluster]:
+def rank_items(items: list[IntelligenceItem], limit: int = 18) -> list[IntelligenceCluster]:
     """Merge similar headlines and reward independent source corroboration."""
     groups: list[list[IntelligenceItem]] = []
     keys: list[frozenset[str]] = []
