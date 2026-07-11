@@ -2,7 +2,7 @@
 
 ## 手機自動查看（GitHub Pages）
 
-專案上傳到 GitHub 並啟用 Pages 後，GitHub 會在每天台灣時間約早上 8 點自動產生最新報告。手機只要開啟你的 Pages 網址，就能看到最新內容，也可以加入手機桌面當作 App 使用。
+專案上傳到 GitHub 並啟用 Pages 後，GitHub 會約每小時自動產生最新報告。手機只要開啟你的 Pages 網址，就能看到最新內容，也可以加入手機桌面當作 App 使用。
 
 完整步驟請看 [GitHub Pages 手機使用說明](docs/GITHUB_PAGES_手機使用說明.md)。
 
@@ -12,7 +12,7 @@
 
 預設個人化主題為 AI／Codex、遊戲與電競、動漫、台中即時事件、台中活動與股票市場。股票關注包含聯電、臻鼎、0050、精材、群創、星宇航空與機器人概念股。排行榜會保留分類平衡，避免整份報告只剩股市或地方新聞。這些主題可在 `config/interests.json` 調整，不需要帳號或 API Key。
 
-目前版本：`0.9.4`。每次 Sprint 完成會同步更新 `VERSION` 與 `CHANGELOG.md`；Git commit 可作為可回復版本點。
+目前版本：`0.9.5`。每次 Sprint 完成會同步更新 `VERSION` 與 `CHANGELOG.md`；Git commit 可作為可回復版本點。
 
 ## 快速開始
 
