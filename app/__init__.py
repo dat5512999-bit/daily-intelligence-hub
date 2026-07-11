@@ -1,0 +1,1 @@
+"""Daily Intelligence application package."""
