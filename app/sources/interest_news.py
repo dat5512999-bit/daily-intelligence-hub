@@ -24,7 +24,7 @@ class InterestNewsSource:
             for query in category.queries:
                 url = f"https://news.google.com/rss/search?q={quote_plus(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant"
                 root = element_tree.fromstring(get_text(url))
-                for item in root.findall("./channel/item")[:4]:
+                for item in root.findall("./channel/item")[:8]:
                     title = item.findtext("title", default="未命名新聞")
                     published = item.findtext("pubDate", default="")
                     result.append(IntelligenceItem(title, item.findtext("link", default=""), self.name, parsedate_to_datetime(published) if published else utc_now(), f"這則消息符合你關注的「{category.name}」。開啟原文可確認完整內容與來源。", 0, category.name))

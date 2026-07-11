@@ -11,6 +11,7 @@ from app.infrastructure.demo_data import DemoSource
 from app.infrastructure.interests import load_interest_profile
 from app.output.html_preview import HtmlPreviewRenderer
 from app.output.markdown import MarkdownRenderer
+from app.output.assets import APP_ICON_SVG, WEB_MANIFEST
 from app.sources.github import GitHubTrendingSource
 from app.sources.hackernews import HackerNewsSource
 from app.sources.interest_news import InterestNewsSource
@@ -39,11 +40,15 @@ def main() -> int:
     markdown_path = args.output_dir / "Daily_Report.md"
     preview_path = args.output_dir / "preview.html"
     index_path = args.output_dir / "index.html"
+    icon_path = args.output_dir / "app-icon.svg"
+    manifest_path = args.output_dir / "manifest.webmanifest"
     markdown_path.write_text(MarkdownRenderer().render(report), encoding="utf-8")
     html = HtmlPreviewRenderer().render(report)
     preview_path.write_text(html, encoding="utf-8")
     # GitHub Pages 的首頁固定讀取 index.html；同時保留 preview.html，方便在電腦上雙擊開啟。
     index_path.write_text(html, encoding="utf-8")
+    icon_path.write_text(APP_ICON_SVG, encoding="utf-8")
+    manifest_path.write_text(WEB_MANIFEST, encoding="utf-8")
     print(f"報告已建立：{markdown_path.resolve()}")
     print(f"預覽已建立：{preview_path.resolve()}")
     if report.source_errors:

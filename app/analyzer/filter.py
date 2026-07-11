@@ -9,6 +9,9 @@ from app.domain.models import IntelligenceItem
 LOW_CONTEXT_TITLES = {"meet", "fff", "#fff", "google meet"}
 LOW_CONTEXT_PATTERNS = (
     re.compile(r"^tiktok 熱門標籤：#[a-z]{2,4}$", re.IGNORECASE),
+    re.compile(r"^tiktok 熱門標籤：#[\w]*_[\w_]*$", re.IGNORECASE),
+    re.compile(r"^tiktok 熱門標籤：#[a-f0-9]{5,}$", re.IGNORECASE),
+    re.compile(r"^tiktok 熱門標籤：#[a-z0-9]*\d[a-z0-9]*$", re.IGNORECASE),
     re.compile(r"^[a-z]{2,5}$", re.IGNORECASE),
 )
 

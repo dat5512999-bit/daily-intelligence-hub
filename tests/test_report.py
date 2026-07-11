@@ -10,6 +10,7 @@ from app.domain.models import IntelligenceItem
 from app.infrastructure.demo_data import DemoSource
 from app.output.html_preview import HtmlPreviewRenderer
 from app.output.markdown import MarkdownRenderer
+from app.output.assets import APP_ICON_SVG, WEB_MANIFEST
 from app.infrastructure.interests import load_interest_profile
 from app.sources.youtube import YouTubeSource
 
@@ -42,7 +43,8 @@ class ReportTests(unittest.TestCase):
         valid = IntelligenceItem("鬼滅之刃 新電影消息", "https://example.com/anime", "Google News", now)
         meet = IntelligenceItem("meet", "https://example.com/meet", "Google 熱門搜尋", now)
         tag = IntelligenceItem("TikTok 熱門標籤：#fff", "https://example.com/tiktok", "TikTok", now)
-        self.assertEqual(filter_items([valid, meet, tag]), [valid])
+        code_like_tag = IntelligenceItem("TikTok 熱門標籤：#184d0a__a", "https://example.com/tiktok-code", "TikTok", now)
+        self.assertEqual(filter_items([valid, meet, tag, code_like_tag]), [valid])
 
     def test_ranking_rewards_cross_source_confirmation(self) -> None:
         now = datetime.now(timezone.utc)
@@ -100,14 +102,40 @@ class ReportTests(unittest.TestCase):
         preview = HtmlPreviewRenderer().render(report)
         self.assertIn("現在紅什麼／冷門苗頭", markdown)
         self.assertIn("持股雷達", markdown)
+        self.assertIn("台灣時間", markdown)
+        self.assertNotIn("UTC", markdown)
         self.assertIn("<!doctype html>", preview)
+        self.assertIn("manifest.webmanifest", preview)
+        self.assertIn("app-icon.svg", preview)
         self.assertIn("今天紅什麼", preview)
+        self.assertIn("台灣時間", preview)
+        self.assertNotIn("UTC", preview)
         self.assertIn("則持股", preview)
         self.assertIn("多看這類", preview)
         self.assertIn("少看這類", preview)
         self.assertIn("情報安全提示", preview)
         self.assertIn("繁中翻譯", preview)
         self.assertIn("白話重點", markdown)
+        self.assertIn("今天紅什麼", WEB_MANIFEST)
+        self.assertIn("<svg", APP_ICON_SVG)
+
+    def test_html_channel_can_show_multiple_items_per_category(self) -> None:
+        now = datetime.now(timezone.utc)
+        items = [
+            IntelligenceItem("幻獸帕魯 1.0 更新", "https://example.com/palworld-1", "Google News", now, category="遊戲與電競"),
+            IntelligenceItem("Palworld Game Pass 消息", "https://example.com/palworld-2", "Google News", now, category="遊戲與電競"),
+            IntelligenceItem("幻獸帕魯 卡牌消息", "https://example.com/palworld-3", "Google News", now, category="遊戲與電競"),
+            IntelligenceItem("Re:0 周邊活動", "https://example.com/anime-1", "Google News", now, category="動漫與娛樂"),
+            IntelligenceItem("鬼滅之刃 電影消息", "https://example.com/anime-2", "Google News", now, category="動漫與娛樂"),
+        ]
+        clusters = tuple(rank_items(items, limit=5))
+        preview = HtmlPreviewRenderer().render(type("Report", (), {"generated_at": now, "clusters": clusters, "source_errors": (), "mode": "demo"})())
+
+        self.assertIn("幻獸帕魯 1.0 更新", preview)
+        self.assertIn("Palworld Game Pass 消息", preview)
+        self.assertIn("幻獸帕魯 卡牌消息", preview)
+        self.assertIn("Re:0 周邊活動", preview)
+        self.assertIn("鬼滅之刃 電影消息", preview)
 
     def test_youtube_source_is_safe_without_configured_channels(self) -> None:
         """An empty starter configuration must not block a Live report."""
