@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.18 - 2026-07-11
+
+- 首頁改為混合式 Daily Intelligence Dashboard：Hero、Alert、Ranking、圖片卡、持股清單、更新清單與活動 Timeline 各司其職。
+- 新增來源型圖片規則：YouTube 使用官方縮圖，GitHub Trending 使用 Owner Avatar；其餘內容不任意配圖。
+- Demo Mode 新增 YouTube 與 GitHub 視覺卡範例，方便預覽新版畫面。
+
 ## 0.9.17 - 2026-07-11
 
 - 卡片新增「現在看／值得看／有空看／路過知道即可」判斷，協助忙碌使用者決定是否投入時間。

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from urllib.parse import parse_qs, urlparse
 
 
 @dataclass(frozen=True)
@@ -108,7 +109,7 @@ class IntelligenceCluster:
             return "搜尋熱度"
         if source_set & {"Dcard", "Reddit", "TikTok", "YouTube"}:
             return "社群討論"
-        if "GitHub" in source_set or "Hacker News" in source_set:
+        if source_set & {"GitHub", "GitHub Trending", "Hacker News"}:
             return "開發者社群"
         return "媒體報導"
 
@@ -119,6 +120,18 @@ class IntelligenceCluster:
     @property
     def primary_url(self) -> str:
         return self.items[0].url
+
+    @property
+    def image_url(self) -> str:
+        """Use only source-owned images that can be derived without scraping artwork."""
+        item = self.items[0]
+        if item.source == "YouTube":
+            video_id = parse_qs(urlparse(item.url).query).get("v", [""])[0]
+            return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg" if video_id else ""
+        if item.source == "GitHub Trending":
+            owner = urlparse(item.url).path.strip("/").split("/", 1)[0]
+            return f"https://github.com/{owner}.png?size=160" if owner else ""
+        return ""
 
 
 @dataclass(frozen=True)

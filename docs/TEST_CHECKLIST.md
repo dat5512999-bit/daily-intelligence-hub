@@ -1,5 +1,8 @@
 # 測試清單
 
+- [ ] 首頁 Hero、Alert、Ranking、Compact List、Timeline 有各自用途，並非所有內容都使用同一種卡片。
+- [ ] 圖片卡只使用可由來源安全推導的 YouTube 官方縮圖或 GitHub Trending Owner Avatar。
+
 - [ ] `python -m unittest discover -s tests -v` 全數通過。
 - [ ] `--demo` 在離線狀態建立 Markdown 與 HTML。
 - [ ] `--live` 在一個來源失敗時仍建立報告。

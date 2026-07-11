@@ -1,5 +1,9 @@
 # 系統架構圖
 
+## 呈現層規則（0.9.18）
+
+`HtmlPreviewRenderer` 依情報性質挑選元件，而不是一律使用新聞卡：最重要一則為 Hero、突發在地消息為 Alert、搜尋與社群訊號為 Ranking、持股與版本更新為 Compact List、活動為 Timeline。圖片僅由資料來源可安全推導時產生：YouTube 使用影片官方縮圖、GitHub Trending 使用 Owner Avatar；其他來源維持文字資訊，避免錯圖與侵權風險。
+
 ```mermaid
 flowchart LR
   Sources["Sources：GitHub / Reddit / HN / Google News / Dcard / Trends / TikTok"] --> Normalize

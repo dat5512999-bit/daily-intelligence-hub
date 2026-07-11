@@ -100,6 +100,15 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(event.source_type_label, "官方公開資訊")
         self.assertEqual(trend.source_type_label, "搜尋熱度")
 
+    def test_only_source_owned_youtube_and_github_images_are_generated(self) -> None:
+        now = datetime.now(timezone.utc)
+        youtube = rank_items([IntelligenceItem("影片", "https://www.youtube.com/watch?v=abc123", "YouTube", now)])[0]
+        github = rank_items([IntelligenceItem("owner/repo", "https://github.com/owner/repo", "GitHub Trending", now)])[0]
+        news = rank_items([IntelligenceItem("一般新聞", "https://example.com/news", "Google News", now)])[0]
+        self.assertIn("i.ytimg.com/vi/abc123", youtube.image_url)
+        self.assertIn("github.com/owner.png", github.image_url)
+        self.assertEqual(news.image_url, "")
+
     def test_report_continues_when_one_source_fails(self) -> None:
         report = GenerateDailyReport([DemoSource(), FailingSource()]).run("demo")
         self.assertTrue(report.clusters)
@@ -133,21 +142,21 @@ class ReportTests(unittest.TestCase):
         workflow = Path(".github/workflows/daily-report.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "17 * * * *"', workflow)
 
-    def test_feedback_is_scoped_to_one_card_instance(self) -> None:
+    def test_feedback_is_scoped_to_one_dashboard_item(self) -> None:
         now = datetime.now(timezone.utc)
         cluster = rank_items([IntelligenceItem("同一篇文章", "https://example.com/one", "Google News", now)])[0]
         renderer = HtmlPreviewRenderer()
-        featured = renderer._mission_card(cluster, 1, featured=True)
-        channel = renderer._mission_card(cluster, 1, featured=False)
-        self.assertIn('data-item="1:featured:https://example.com/one"', featured)
-        self.assertIn('data-item="1:channel:https://example.com/one"', channel)
+        compact = renderer._compact_row(cluster, 1, "update")
+        self.assertIn('data-item="update:1:https://example.com/one"', compact)
 
-    def test_featured_items_are_not_repeated_in_category_channels(self) -> None:
+    def test_dashboard_uses_mixed_components_not_category_card_grid(self) -> None:
         report = GenerateDailyReport([DemoSource()]).run("demo")
         preview = HtmlPreviewRenderer().render(report)
-        for index, cluster in enumerate(report.clusters[:3], 1):
-            self.assertIn(f'data-item="{index}:featured:', preview)
-            self.assertNotIn(f'data-item="{index}:channel:', preview)
+        self.assertIn('class="hero"', preview)
+        self.assertIn("RANKING", preview)
+        self.assertIn("MARKET", preview)
+        self.assertIn("TODAY", preview)
+        self.assertNotIn("category-tabs", preview)
 
     def test_official_lifestyle_event_source_extracts_events_not_navigation(self) -> None:
         html = """
@@ -177,8 +186,8 @@ class ReportTests(unittest.TestCase):
         self.assertIn("manifest.webmanifest", preview)
         self.assertIn("app-icon.svg", preview)
         self.assertIn("今天紅什麼", preview)
-        self.assertIn("category-tabs", preview)
-        self.assertIn("生活流行", preview)
+        self.assertIn("RANKING", preview)
+        self.assertIn("今天可去／可安排", preview)
         self.assertIn("台灣時間", preview)
         self.assertNotIn("UTC", preview)
         self.assertIn("則持股", preview)
@@ -186,7 +195,7 @@ class ReportTests(unittest.TestCase):
         self.assertIn("少看這則", preview)
         self.assertIn("data-item=", preview)
         self.assertIn("daily-intelligence-item-feedback-v1", preview)
-        self.assertIn("情報安全提示", preview)
+        self.assertIn("情報判讀", preview)
         self.assertIn("繁中翻譯", preview)
         self.assertIn("白話重點", markdown)
         self.assertIn("建議：", markdown)
@@ -219,6 +228,19 @@ class ReportTests(unittest.TestCase):
         self.assertIn("幻獸帕魯 卡牌消息", preview)
         self.assertIn("Re:0 周邊活動", preview)
         self.assertIn("鬼滅之刃 電影消息", preview)
+
+    def test_dashboard_shows_visual_cards_only_for_source_owned_images(self) -> None:
+        now = datetime.now(timezone.utc)
+        clusters = tuple(rank_items([
+            IntelligenceItem("YouTube 影片", "https://www.youtube.com/watch?v=abc123", "YouTube", now, category="影音生活"),
+            IntelligenceItem("owner/repo", "https://github.com/owner/repo", "GitHub Trending", now, category="GitHub"),
+            IntelligenceItem("一般新聞", "https://example.com/news", "Google News", now, category="科技"),
+        ]))
+        report = type("Report", (), {"generated_at": now, "clusters": clusters, "source_errors": (), "mode": "demo", "source_count": 3, "health_label": "來源正常", "health_note": "測試"})()
+        preview = HtmlPreviewRenderer().render(report)
+        self.assertIn("VISUAL PICKS", preview)
+        self.assertIn("i.ytimg.com/vi/abc123", preview)
+        self.assertIn("github.com/owner.png", preview)
 
     def test_dcard_lifestyle_mapping_and_taichung_exception(self) -> None:
         self.assertEqual(DcardSource._category("閒聊", "最近小紅書流行餐廳", ""), "生活流行")

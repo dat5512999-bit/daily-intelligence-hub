@@ -1,4 +1,4 @@
-"""A self-contained, mobile-first personal intelligence console."""
+"""Mixed-component, mobile-first dashboard renderer."""
 
 from __future__ import annotations
 
@@ -10,91 +10,68 @@ from app.output.time_format import format_taiwan_time
 
 
 class HtmlPreviewRenderer:
-    """Render information as a focused mission console, not a social-media feed."""
-
-    _categories: tuple[tuple[str, str, str], ...] = (
-        ("\u751f\u6d3b\u6d41\u884c", "&#10024;", "#ffcf6e"),
-        ("\u793e\u7fa4\u51b7\u9580\u96f7\u9054", "&#8981;", "#f2d35d"),
-        ("\u641c\u5c0b\u8da8\u52e2", "&#8981;", "#4dd7ff"),
-        ("\u77ed\u5f71\u97f3\u8da8\u52e2", "&#9835;", "#ff6b9f"),
-        ("\u53f0\u4e2d\u73fe\u5728\u8981\u6ce8\u610f", "&#9888;", "#ff5d73"),
-        ("AI\uff0fCodex", "&#9670;", "#8f7cff"),
-        ("\u904a\u6232\u8207\u96fb\u7af6", "&#9654;", "#38d6a5"),
-        ("\u52d5\u6f2b\u8207\u5a1b\u6a02", "&#9733;", "#f5aa4b"),
-        ("\u80a1\u7968\u8207\u5e02\u5834", "&#8599;", "#46b9ff"),
-        ("\u53f0\u4e2d\u597d\u5eb7\u8207\u6d3b\u52d5", "&#10022;", "#ff7ac6"),
-    )
+    """Render a personal intelligence dashboard, not a uniform news-card feed."""
 
     @staticmethod
-    def _translation_url(url: str) -> str:
+    def _translate(url: str) -> str:
         return f"https://translate.google.com/translate?sl=auto&tl=zh-TW&u={quote(url, safe='')}"
 
-    def _style_for(self, category: str) -> tuple[str, str]:
-        for name, icon, accent in self._categories:
-            if name == category:
-                return icon, accent
-        return "&#9679;", "#7184a8"
+    @staticmethod
+    def _link(cluster: IntelligenceCluster, label: str = "看原文") -> str:
+        return f'<a class="text-link" href="{escape(cluster.primary_url, quote=True)}">{label} ↗</a>'
 
     @staticmethod
-    def _slug(category: str) -> str:
-        return "cat-" + quote(category, safe="")
+    def _item_id(cluster: IntelligenceCluster, index: int, area: str) -> str:
+        return escape(f"{area}:{index}:{cluster.primary_url}", quote=True)
 
-    def _mission_card(self, cluster: IntelligenceCluster, number: int, featured: bool = False) -> str:
-        icon, accent = self._style_for(cluster.category)
-        translate_url = self._translation_url(cluster.primary_url)
-        style = "mission featured" if featured else "mission"
-        category = escape(cluster.category, quote=True)
-        title = escape(cluster.title, quote=True)
-        item_id = escape(f"{number}:{'featured' if featured else 'channel'}:{cluster.primary_url}", quote=True)
-        feedback_script = '''<script>if(!window.dailyItemFeedbackReady){window.dailyItemFeedbackReady=true;localStorage.removeItem("daily-intelligence-feedback-v1");const key="daily-intelligence-item-feedback-v1";const state=JSON.parse(localStorage.getItem(key)||'{"more":[],"less":[]}');const refresh=()=>document.querySelectorAll(".mission").forEach(card=>{const id=card.dataset.item||"";card.classList.toggle("is-muted",state.less.includes(id));card.classList.toggle("is-loved",state.more.includes(id));});const save=()=>localStorage.setItem(key,JSON.stringify(state));document.addEventListener("click",event=>{const button=event.target.closest(".feedback button");if(!button)return;event.preventDefault();event.stopImmediatePropagation();const card=button.closest(".mission");const id=card?.dataset.item||"";const list=button.dataset.vote==="more"?state.more:state.less;const other=button.dataset.vote==="more"?state.less:state.more;if(!list.includes(id))list.push(id);const index=other.indexOf(id);if(index>=0)other.splice(index,1);save();refresh();},true);document.addEventListener("DOMContentLoaded",()=>{const note=document.querySelector(".feedback-note");if(note)note.textContent="按「多看這則」或「少看這則」只會記住你按的這張卡，不會連動同分類其他內容。";refresh();});}</script>'''
+    def _compact_row(self, cluster: IntelligenceCluster, index: int, area: str = "list") -> str:
+        item_id = self._item_id(cluster, index, area)
         return (
-            f'<article class="{style}" style="--accent:{accent}" data-category="{category}" data-item="{item_id}" data-title="{title}"><div class="mission-top">'
-            f'<span class="mission-number">\u4efb\u52d9 {number:02d}</span><span class="mission-icon">{icon}</span></div>'
-            f'<div class="mission-category">{escape(cluster.category)} &#183; {len(cluster.sources)} \u500b\u4f86\u6e90</div>'
-            f'<h3>{escape(cluster.title)}</h3><p class="impact">{escape(cluster.decision_label)}</p>'
-            f'<p class="summary"><b>30 \u79d2\u60c5\u5831\uff1a</b>{escape(cluster.summary)}</p>'
-            f'<details><summary>\u5c55\u958b\u60c5\u5831\u5206\u6790</summary><p>{escape(cluster.why_it_appeared)}</p></details>'
-            f'<div class="actions"><a class="button" href="{escape(cluster.primary_url, quote=True)}">\u9032\u5165\u60c5\u5831</a>'
-            f'<a class="button ghost" href="{escape(translate_url, quote=True)}">\u7e41\u4e2d\u7ffb\u8b6f</a></div>'
-            f'<div class="feedback"><button type="button" data-vote="more">\u591a\u770b\u9019\u5247</button><button type="button" data-vote="less">\u5c11\u770b\u9019\u5247</button></div>'
-            f'<footer><span class="pulse"></span>{escape(cluster.source_type_label)} &#183; {escape(cluster.signal_label)}</footer>{feedback_script}</article>'
+            f'<article class="compact" data-item="{item_id}"><div class="compact-main">'
+            f'<span class="source-pill">{escape(cluster.source_type_label)}</span><h3>{escape(cluster.title)}</h3>'
+            f'<p>{escape(cluster.decision_label)} · {escape(cluster.summary)}</p></div>'
+            f'<div class="compact-actions">{self._link(cluster)}<button data-vote="more">多看這則</button><button data-vote="less">少看這則</button></div></article>'
+        )
+
+    def _image_card(self, cluster: IntelligenceCluster, index: int) -> str:
+        item_id = self._item_id(cluster, index, "visual")
+        image = escape(cluster.image_url, quote=True)
+        return (
+            f'<article class="image-card" data-item="{item_id}"><img loading="lazy" src="{image}" alt="">'
+            f'<div><span class="source-pill">{escape(cluster.source_type_label)}</span><h3>{escape(cluster.title)}</h3>'
+            f'<p>{escape(cluster.decision_label)}</p>{self._link(cluster)}</div></article>'
+        )
+
+    def _hero(self, cluster: IntelligenceCluster) -> str:
+        visual = f'<img src="{escape(cluster.image_url, quote=True)}" alt="">' if cluster.image_url else '<div class="hero-orb">✦</div>'
+        return (
+            f'<section class="hero"><div class="hero-copy"><span>今日最值得花時間</span><h1>{escape(cluster.title)}</h1>'
+            f'<p class="decision">{escape(cluster.decision_label)}</p><p>{escape(cluster.summary)}</p>'
+            f'<div class="hero-actions">{self._link(cluster, "進入情報")}<a class="text-link muted" href="{escape(self._translate(cluster.primary_url), quote=True)}">繁中翻譯</a></div></div>{visual}</section>'
         )
 
     def render(self, report: DailyReport) -> str:
-        mode_label = "\u96e2\u7dda\u7bc4\u4f8b" if report.mode == "demo" else report.health_label
-        generated_time = escape(format_taiwan_time(report.generated_at))
-        source_count = report.source_count
-        discovery_count = sum(1 for cluster in report.clusters if cluster.category in {"生活流行", "社群冷門雷達", "搜尋趨勢", "短影音趨勢"})
-        stock_count = sum(1 for cluster in report.clusters if cluster.category == "股票與市場")
-        metric_strip = (
-            f'<div class="metrics"><div><b>{len(report.clusters)}</b><span>則情報</span></div>'
-            f'<div><b>{discovery_count}</b><span>個苗頭</span></div>'
-            f'<div><b>{stock_count}</b><span>則持股</span></div>'
-            f'<div><b>{source_count}</b><span>個來源</span></div></div>'
-        )
-        featured_clusters = report.clusters[:3]
-        channel_clusters = report.clusters[3:]
-        primary_cards = "".join(self._mission_card(cluster, index, True) for index, cluster in enumerate(featured_clusters, 1))
-        channels = ""
-        cluster_numbers = {id(cluster): index for index, cluster in enumerate(report.clusters, 1)}
-        active_categories = [
-            (category, icon, accent)
-            for category, icon, accent in self._categories
-            if any(cluster.category == category for cluster in channel_clusters)
-        ]
-        category_tabs = "".join(
-            f'<a href="#{self._slug(category)}" style="--accent:{accent}">{icon}<span>{escape(category)}</span></a>'
-            for category, icon, accent in active_categories
-        )
-        category_nav = f'<nav class="category-tabs">{category_tabs}</nav>' if category_tabs else ""
-        for category, icon, accent in self._categories:
-            filtered = [cluster for cluster in channel_clusters if cluster.category == category][:3]
-            if filtered:
-                cards = "".join(self._mission_card(cluster, cluster_numbers[id(cluster)]) for cluster in filtered)
-                channels += f'<section id="{self._slug(category)}" class="channel" style="--accent:{accent}"><div class="channel-title"><span>{icon}</span><div><small>\u60c5\u5831\u983b\u9053</small><h2>{escape(category)} <em>\u6700\u591a 3 \u5247</em></h2></div></div><div class="mission-grid">{cards}</div></section>'
-        warnings = "".join(f"<li>{escape(error)}</li>" for error in report.source_errors)
-        empty = (
-            '<section class="system-warning"><b>\u7cfb\u7d71\u63d0\u793a</b><p>\u76ee\u524d\u7121\u6cd5\u53d6\u5f97\u5373\u6642\u60c5\u5831\u3002\u8acb\u78ba\u8a8d\u7db2\u8def\u5f8c\u518d\u57f7\u884c\u4e00\u6b21\uff1b\u7cfb\u7d71\u4e0d\u6703\u7528\u7bc4\u4f8b\u8cc7\u6599\u5192\u5145\u771f\u5be6\u8da8\u52e2\u3002</p></section>'
-            if not report.clusters else ""
-        )
-        return f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101722"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="今天紅什麼"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="app-icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="app-icon.svg"><title>\u4eca\u5929\u7d05\u4ec0\u9ebc\u60c5\u5831\u96f7\u9054</title><style>:root{{color-scheme:dark;scroll-behavior:smooth}}*{{box-sizing:border-box}}body{{margin:0;background:#0b0e14;color:#f5f2ea;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}body:before{{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(135deg,#102538 0%,transparent 38%),linear-gradient(315deg,#3b1f35 0%,transparent 34%);z-index:-1}}main{{max-width:820px;margin:auto;padding:18px 14px 48px}}.console{{border:1px solid #2b3443;border-radius:8px;background:#101722e6;box-shadow:0 24px 70px #0009;overflow:hidden}}.console-header{{padding:24px;background:linear-gradient(120deg,#162334,#231b2b 55%,#2b2630);border-bottom:1px solid #3b4658}}.status{{display:flex;justify-content:space-between;gap:8px;color:#b6c0cf;font-size:.78rem;letter-spacing:.08em}}.online{{color:#75dfb4}}.online.degraded{{color:#ffd36e}}h1{{font-size:clamp(2rem,8vw,3.2rem);margin:14px 0 8px;letter-spacing:0;font-weight:850}}.console-header p{{margin:0;color:#d2d8e2}}.health-note{{margin-top:9px!important;color:#ffdda3!important;font-size:.86rem}}.metrics{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:18px}}.metrics div{{border:1px solid #414b5b;background:#ffffff0b;border-radius:8px;padding:10px}}.metrics b{{display:block;font-size:1.25rem;color:#fff}}.metrics span{{font-size:.76rem;color:#aeb8c7}}.category-tabs{{position:sticky;top:0;z-index:3;display:flex;gap:8px;overflow-x:auto;padding:12px 20px;background:#101722ee;border-bottom:1px solid #263244;backdrop-filter:blur(10px)}}.category-tabs a{{white-space:nowrap;text-decoration:none;color:#f5f2ea;border:1px solid color-mix(in srgb,var(--accent) 65%,#38465a);background:#ffffff0a;border-radius:999px;padding:8px 11px;font-size:.84rem;font-weight:750}}.category-tabs span{{margin-left:5px}}.system-warning{{margin:15px;padding:15px;border:1px solid #ff7b8d;border-radius:8px;background:#321b27;color:#ffdce2}}.primary-intro{{padding:20px 20px 4px}}.primary-intro small,.channel small{{color:#94a1b5;letter-spacing:.12em}}h2{{margin:5px 0;font-size:1.12rem}}.channel h2 em{{font-style:normal;color:#93a0b4;font-size:.78rem;font-weight:600}}.primary-intro p{{margin:0;color:#b8c1ce;line-height:1.55}}.mission-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px;padding:16px 20px 22px}}.mission{{position:relative;overflow:hidden;background:#151d2a;border:1px solid #2d394b;border-radius:8px;padding:16px;box-shadow:inset 4px 0 var(--accent)}}.mission.is-muted{{display:none}}.mission.is-loved{{border-color:var(--accent);box-shadow:inset 4px 0 var(--accent),0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}}.mission:after{{content:"";position:absolute;right:0;top:0;width:42%;height:3px;background:var(--accent);opacity:.85}}.featured{{background:linear-gradient(145deg,#1b2737,#151d2a);border-color:#4a5a72}}.mission-top{{display:flex;align-items:center;justify-content:space-between}}.mission-number{{font-size:.72rem;letter-spacing:.1em;color:#9eabba}}.mission-icon{{color:var(--accent);font-size:1.2rem}}.mission-category{{margin-top:12px;color:var(--accent);font-size:.8rem;font-weight:760}}h3{{font-size:1.08rem;line-height:1.45;margin:7px 0 9px;letter-spacing:0}}.impact{{display:inline-block;margin:0;padding:5px 8px;border:1px solid color-mix(in srgb,var(--accent) 55%,transparent);border-radius:8px;color:#f3f6fb;background:#ffffff0a;font-size:.82rem}}.summary{{color:#d6dde7;line-height:1.65;margin:11px 0}}details{{color:#aeb7c6;line-height:1.6}}summary{{cursor:pointer;color:#d7deeb;font-weight:650}}.actions,.feedback{{display:flex;gap:8px;margin:15px 0 10px;flex-wrap:wrap}}.feedback{{margin-top:4px}}.button,.feedback button{{display:inline-block;text-decoration:none;background:var(--accent);color:#09101d;padding:8px 10px;border-radius:8px;font-size:.84rem;font-weight:800;border:0;cursor:pointer}}.button.ghost,.feedback button{{background:#222c3c;color:#e5ebf5;border:1px solid #414d60}}.feedback button[data-vote="more"]{{border-color:color-mix(in srgb,var(--accent) 70%,#414d60)}}.feedback-note{{margin:0 20px 12px;color:#94a1b5;font-size:.82rem}}footer{{display:flex;align-items:center;gap:6px;padding-top:10px;border-top:1px solid #2c3748;color:#9eabba;font-size:.8rem}}.pulse{{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}}.channel{{margin-top:1px;border-top:1px solid #2a3545;scroll-margin-top:62px}}.channel-title{{display:flex;gap:10px;align-items:center;padding:20px 20px 0}}.channel-title>span{{color:var(--accent);font-size:1.3rem}}.channel h2{{color:#fbfaf6}}.trust{{margin:0 20px 22px;padding:15px;border:1px solid #303b4d;border-radius:8px;background:#0d131d;color:#b8c1ce;line-height:1.6}}.trust h2{{color:#f5f2ea}}ul{{color:#ffabb9;margin-bottom:0}}@media(max-width:520px){{main{{padding:0}}.console{{border-radius:0;min-height:100vh}}.console-header{{padding:22px 17px}}.metrics{{grid-template-columns:repeat(2,1fr)}}.category-tabs{{padding:10px 17px}}.primary-intro{{padding:19px 17px 2px}}.mission-grid{{grid-template-columns:1fr;padding:14px 17px 20px}}.channel-title{{padding:18px 17px 0}}.trust{{margin:0 17px 22px}}}}</style></head><body><main><section class="console"><header class="console-header"><div class="status"><span>\u500b\u4eba\u8da8\u52e2\u63a7\u5236\u53f0</span><span class="online{' degraded' if report.mode == 'live' and report.health_label != '\u4f86\u6e90\u6b63\u5e38' else ''}">&#9679; {mode_label}</span></div><h1>\u4eca\u5929\u7d05\u4ec0\u9ebc\uff1f</h1><p>{generated_time} &#183; \u65b0\u805e\u4fdd\u5e95\uff0c\u751f\u6d3b\u8da8\u52e2\u8207\u793e\u7fa4\u82d7\u982d\u512a\u5148\uff0c\u6301\u80a1\u96f7\u9054\u540c\u6b65\u770b</p><p class="health-note">{escape(report.health_note)}</p>{metric_strip}</header>{category_nav}{empty}<section class="primary-intro"><small>\u6548\u7387\u6383\u63cf</small><h2>\u5148\u5224\u65b7\u4eca\u5929\u503c\u4e0d\u503c\u5f97\u6df1\u5165</h2><p>\u4e0a\u65b9\u5206\u985e\u53ef\u76f4\u63a5\u8df3\u5230\u4f60\u60f3\u770b\u7684\u983b\u9053\uff1b\u6bcf\u985e\u6700\u591a\u5148\u7d66 3 \u5247\uff0c\u76f8\u8fd1\u8a71\u984c\u6703\u81ea\u52d5\u5408\u4f75\uff0c\u4e0d\u8b93\u540c\u4e00\u4ef6\u4e8b\u6d17\u7248\u3002</p></section><p class="feedback-note">\u6309\u300c\u591a\u770b\u9019\u985e\u300d\u6216\u300c\u5c11\u770b\u9019\u985e\u300d\u6703\u5148\u8a18\u5728\u9019\u53f0\u624b\u6a5f/\u700f\u89bd\u5668\uff0c\u5e6b\u4f60\u7576\u4e0b\u6e05\u7406\u7248\u9762\u3002</p><section class="mission-grid">{primary_cards}</section>{channels}<section class="trust"><h2>\u60c5\u5831\u5b89\u5168\u63d0\u793a</h2><p>\u793e\u7fa4\u8207\u641c\u5c0b\u8a0a\u865f\u53ea\u4ee3\u8868\u5927\u5bb6\u6b63\u5728\u597d\u5947\u6216\u8a0e\u8ad6\uff0c\u4e0d\u7b49\u65bc\u4e8b\u5be6\u3002\u5c0f\u7d05\u66f8\u76ee\u524d\u4f7f\u7528\u516c\u958b\u641c\u5c0b/\u65b0\u805e\u9593\u63a5\u8a0a\u865f\uff0c\u4e0d\u505a\u767b\u5165\u5f0f\u6293\u53d6\u3002\u80a1\u7968\u76f8\u95dc\u5167\u5bb9\u53ea\u662f\u60c5\u5831\u63d0\u9192\uff0c\u4e0d\u662f\u8cb7\u8ce3\u5efa\u8b70\u3002</p>{'<ul>'+warnings+'</ul>' if warnings else ''}</section></section></main><script>const key='daily-intelligence-feedback-v1';const data=JSON.parse(localStorage.getItem(key)||'{{"more":[],"less":[]}}');function save(){{localStorage.setItem(key,JSON.stringify(data));}}function applyFeedback(){{document.querySelectorAll('.mission').forEach(card=>{{const category=card.dataset.category||'';card.classList.toggle('is-muted',data.less.includes(category));card.classList.toggle('is-loved',data.more.includes(category));}});}}document.querySelectorAll('.feedback button').forEach(button=>button.addEventListener('click',()=>{{const card=button.closest('.mission');const category=card.dataset.category||'';const list=button.dataset.vote==='more'?data.more:data.less;const other=button.dataset.vote==='more'?data.less:data.more;if(!list.includes(category))list.push(category);const index=other.indexOf(category);if(index>=0)other.splice(index,1);save();applyFeedback();}}));applyFeedback();</script></body></html>'''
+        clusters = list(report.clusters)
+        ai_hero = next((item for item in clusters if item.category == "AI／Codex"), None)
+        hero = ai_hero or (clusters[0] if clusters else None)
+        remaining = [item for item in clusters if item is not hero]
+        alerts = [item for item in remaining if item.decision_label.startswith("現在看") and "持股" not in item.decision_label][:3]
+        remaining = [item for item in remaining if item not in alerts]
+        visuals = [item for item in remaining if item.image_url][:4]
+        remaining = [item for item in remaining if item not in visuals]
+        rankings = [item for item in remaining if item.source_type_label in {"搜尋熱度", "社群討論"}][:5]
+        remaining = [item for item in remaining if item not in rankings]
+        stocks = [item for item in remaining if item.category == "股票與市場"][:3]
+        events = [item for item in remaining if item.category in {"生活流行", "台中好康與活動"}][:4]
+        updates = [item for item in remaining if item.category in {"AI／Codex", "GitHub", "遊戲與電競", "動漫與娛樂"}][:6]
+        mode = "離線範例" if report.mode == "demo" else report.health_label
+        warning_html = "".join(f"<li>{escape(error)}</li>" for error in report.source_errors)
+        alert_html = "".join(f'<div class="alert">⚠ <b>{escape(item.title)}</b><span>{escape(item.decision_label)}</span>{self._link(item)}</div>' for item in alerts)
+        ranking_html = "".join(f'<li><b>{index}</b><span>{escape(item.title)}</span><small>{escape(item.source_type_label)}</small>{self._link(item)}</li>' for index, item in enumerate(rankings, 1))
+        visual_html = "".join(self._image_card(item, index) for index, item in enumerate(visuals, 1))
+        stock_html = "".join(self._compact_row(item, index, "stock") for index, item in enumerate(stocks, 1))
+        update_html = "".join(self._compact_row(item, index, "update") for index, item in enumerate(updates, 1))
+        event_html = "".join(f'<li><span>●</span><div><b>{escape(item.title)}</b><p>{escape(item.decision_label)}</p>{self._link(item)}</div></li>' for item in events)
+        empty = '<section class="empty">本次資料不足，系統不會使用範例內容冒充即時情報。</section>' if not clusters else ""
+        return f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101722"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="今天紅什麼"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="app-icon.svg"><link rel="apple-touch-icon" href="app-icon.svg"><title>今天紅什麼</title><style>
+:root{{color-scheme:dark;--bg:#0a0e16;--panel:#121a28;--line:#2b3950;--text:#f5f4ef;--muted:#aab6c8;--cyan:#55d9ff;--pink:#ff6f9f;--gold:#ffc769}}*{{box-sizing:border-box}}body{{margin:0;background:radial-gradient(circle at 10% 0,#193450 0,transparent 34%),radial-gradient(circle at 100% 15%,#3a1e3e 0,transparent 30%),var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}}main{{max-width:980px;margin:auto;padding:20px 14px 54px}}.shell{{border:1px solid var(--line);background:#0e1522e8;box-shadow:0 25px 80px #0008;border-radius:22px;overflow:hidden}}header{{padding:20px 22px;border-bottom:1px solid var(--line)}}.topline{{display:flex;justify-content:space-between;color:var(--muted);font-size:.82rem}}.status{{color:#75dfb4}}.status.degraded{{color:var(--gold)}}.metrics{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}}.metrics div{{padding:11px;border:1px solid #334159;border-radius:12px;background:#ffffff08}}.metrics b{{display:block;font-size:1.25rem}}.metrics span{{color:var(--muted);font-size:.78rem}}section{{padding:18px 22px;border-bottom:1px solid var(--line)}}.hero{{display:grid;grid-template-columns:1.4fr .6fr;gap:18px;background:linear-gradient(130deg,#16263a,#231b31)}}.hero span,.eyebrow{{color:var(--cyan);font-size:.82rem;font-weight:800;letter-spacing:.08em}}h1{{font-size:clamp(1.8rem,5vw,3rem);line-height:1.08;margin:9px 0}}h2{{font-size:1.05rem;margin:0 0 12px}}h3{{margin:6px 0;font-size:1rem;line-height:1.4}}p{{color:#d5dbe6;line-height:1.55}}.decision,.source-pill{{display:inline-block;border:1px solid #5a7899;border-radius:999px;padding:4px 8px;font-size:.78rem;color:#eaf7ff;background:#ffffff0a}}.hero img,.hero-orb{{width:100%;aspect-ratio:1;object-fit:cover;border-radius:16px;background:linear-gradient(145deg,#263c5d,#622d58);display:grid;place-items:center;font-size:4rem;color:var(--gold)}}.hero-actions,.compact-actions{{display:flex;gap:10px;align-items:center;flex-wrap:wrap}}.text-link{{color:var(--cyan);font-weight:800;text-decoration:none;font-size:.86rem}}.muted{{color:var(--muted)}}.alert-stack{{display:grid;gap:8px}}.alert{{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:11px;border-left:3px solid var(--pink);background:#301c2a;border-radius:8px}}.alert span{{color:#ffd6e3;font-size:.82rem}}.ranking{{list-style:none;padding:0;margin:0}}.ranking li{{display:grid;grid-template-columns:28px 1fr auto auto;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid #263247}}.ranking b{{color:var(--gold)}}.ranking small{{color:var(--muted)}}.visual-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}}.image-card{{overflow:hidden;border:1px solid #334159;border-radius:14px;background:var(--panel)}}.image-card img{{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#263246}}.image-card div{{padding:12px}}.image-card p{{font-size:.84rem;margin:8px 0}}.split{{display:grid;grid-template-columns:1fr 1fr;gap:0}}.split>section{{border-bottom:0}}.split>section+section{{border-left:1px solid var(--line)}}.compact{{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #263247}}.compact p{{margin:5px 0 0;font-size:.86rem}}button{{border:1px solid #40516a;border-radius:8px;background:#202c3d;color:#dce8f6;padding:5px 8px;cursor:pointer}}.timeline{{list-style:none;padding:0;margin:0}}.timeline li{{display:flex;gap:12px;padding:8px 0;border-left:1px solid #465878;margin-left:6px;padding-left:14px}}.timeline li>span{{color:var(--pink);margin-left:-22px;background:#0e1522;padding:0 5px}}.timeline p{{margin:4px 0;font-size:.86rem}}.trust{{color:var(--muted);font-size:.86rem}}.trust ul{{color:#ffb4c8}}.empty{{color:#ffd6df;background:#301c2a}}@media(max-width:650px){{main{{padding:0}}.shell{{border-radius:0;min-height:100vh}}header,section{{padding:17px}}.metrics{{grid-template-columns:repeat(2,1fr)}}.hero,.split{{grid-template-columns:1fr}}.hero img,.hero-orb{{max-height:230px;aspect-ratio:16/8}}.split>section+section{{border-left:0;border-top:1px solid var(--line)}}.ranking li{{grid-template-columns:22px 1fr auto}}.ranking small{{display:none}}}}</style></head><body><main><div class="shell"><header><div class="topline"><span>個人 Daily Intelligence</span><span class="status{' degraded' if report.mode == 'live' and report.health_label != '來源正常' else ''}">● {mode}</span></div><p>{escape(format_taiwan_time(report.generated_at))} · {escape(report.health_note)}</p><div class="metrics"><div><b>{len(clusters)}</b><span>則情報</span></div><div><b>{sum(1 for item in clusters if item.source_type_label in {'搜尋熱度','社群討論'})}</b><span>個趨勢訊號</span></div><div><b>{sum(1 for item in clusters if item.category == '股票與市場')}</b><span>則持股雷達</span></div><div><b>{report.source_count}</b><span>個有效來源</span></div></div></header>{self._hero(hero) if hero else ''}{empty}{'<section><div class="eyebrow">ALERT</div><h2>現在要注意</h2><div class="alert-stack">'+alert_html+'</div></section>' if alerts else ''}{'<section><div class="eyebrow">RANKING</div><h2>現在大家在紅什麼</h2><ol class="ranking">'+ranking_html+'</ol></section>' if rankings else ''}{'<section><div class="eyebrow">VISUAL PICKS</div><h2>有圖才值得用圖</h2><div class="visual-grid">'+visual_html+'</div></section>' if visuals else ''}<div class="split">{'<section><div class="eyebrow">MARKET</div><h2>你的持股雷達</h2>'+stock_html+'</section>' if stocks else ''}{'<section><div class="eyebrow">UPDATES</div><h2>AI、GitHub、遊戲與動漫更新</h2>'+update_html+'</section>' if updates else ''}</div>{'<section><div class="eyebrow">TODAY</div><h2>今天可去／可安排</h2><ol class="timeline">'+event_html+'</ol></section>' if events else ''}<section class="trust"><b>情報判讀</b><p>官方公開資訊適合確認行程；媒體報導與搜尋熱度適合掌握脈動；社群討論不等於事實。股票內容不是買賣建議。</p>{'<ul>'+warning_html+'</ul>' if warning_html else ''}</section></div></main><script>const key='daily-intelligence-item-feedback-v1';const state=JSON.parse(localStorage.getItem(key)||'{{"more":[],"less":[]}}');const refresh=()=>document.querySelectorAll('[data-item]').forEach(card=>{{const id=card.dataset.item;card.style.display=state.less.includes(id)?'none':'';card.style.outline=state.more.includes(id)?'2px solid #55d9ff':'';}});document.addEventListener('click',event=>{{const button=event.target.closest('[data-vote]');if(!button)return;const card=button.closest('[data-item]');const id=card.dataset.item;const list=button.dataset.vote==='more'?state.more:state.less;const other=button.dataset.vote==='more'?state.less:state.more;if(!list.includes(id))list.push(id);const found=other.indexOf(id);if(found>=0)other.splice(found,1);localStorage.setItem(key,JSON.stringify(state));refresh();}});refresh();</script></body></html>'''
