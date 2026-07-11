@@ -91,6 +91,15 @@ class ReportTests(unittest.TestCase):
         self.assertIn("限時好康", deal.attention_label)
         self.assertIn("持股雷達", stock.attention_label)
 
+    def test_decision_and_source_labels_are_plain_and_actionable(self) -> None:
+        now = datetime.now(timezone.utc)
+        fire = rank_items([IntelligenceItem("台中火災封路", "https://example.com/fire", "Google News", now)])[0]
+        event = rank_items([IntelligenceItem("台中週末市集活動", "https://example.com/event", "觀光署活動", now)])[0]
+        trend = rank_items([IntelligenceItem("新迷因突然爆紅", "https://example.com/trend", "Google 熱門搜尋", now)])[0]
+        self.assertIn("現在看", fire.decision_label)
+        self.assertEqual(event.source_type_label, "官方公開資訊")
+        self.assertEqual(trend.source_type_label, "搜尋熱度")
+
     def test_report_continues_when_one_source_fails(self) -> None:
         report = GenerateDailyReport([DemoSource(), FailingSource()]).run("demo")
         self.assertTrue(report.clusters)
@@ -123,6 +132,22 @@ class ReportTests(unittest.TestCase):
 
         workflow = Path(".github/workflows/daily-report.yml").read_text(encoding="utf-8")
         self.assertIn('cron: "17 * * * *"', workflow)
+
+    def test_feedback_is_scoped_to_one_card_instance(self) -> None:
+        now = datetime.now(timezone.utc)
+        cluster = rank_items([IntelligenceItem("同一篇文章", "https://example.com/one", "Google News", now)])[0]
+        renderer = HtmlPreviewRenderer()
+        featured = renderer._mission_card(cluster, 1, featured=True)
+        channel = renderer._mission_card(cluster, 1, featured=False)
+        self.assertIn('data-item="1:featured:https://example.com/one"', featured)
+        self.assertIn('data-item="1:channel:https://example.com/one"', channel)
+
+    def test_featured_items_are_not_repeated_in_category_channels(self) -> None:
+        report = GenerateDailyReport([DemoSource()]).run("demo")
+        preview = HtmlPreviewRenderer().render(report)
+        for index, cluster in enumerate(report.clusters[:3], 1):
+            self.assertIn(f'data-item="{index}:featured:', preview)
+            self.assertNotIn(f'data-item="{index}:channel:', preview)
 
     def test_official_lifestyle_event_source_extracts_events_not_navigation(self) -> None:
         html = """
@@ -157,11 +182,15 @@ class ReportTests(unittest.TestCase):
         self.assertIn("台灣時間", preview)
         self.assertNotIn("UTC", preview)
         self.assertIn("則持股", preview)
-        self.assertIn("多看這類", preview)
-        self.assertIn("少看這類", preview)
+        self.assertIn("多看這則", preview)
+        self.assertIn("少看這則", preview)
+        self.assertIn("data-item=", preview)
+        self.assertIn("daily-intelligence-item-feedback-v1", preview)
         self.assertIn("情報安全提示", preview)
         self.assertIn("繁中翻譯", preview)
         self.assertIn("白話重點", markdown)
+        self.assertIn("建議：", markdown)
+        self.assertIn("社群討論", preview)
         self.assertIn("今天紅什麼", WEB_MANIFEST)
         self.assertIn("<svg", APP_ICON_SVG)
 

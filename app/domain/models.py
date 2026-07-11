@@ -80,6 +80,39 @@ class IntelligenceCluster:
         return "大家正在聊：先看白話重點，再決定要不要深入"
 
     @property
+    def decision_label(self) -> str:
+        """Give a busy reader an explicit time-spending recommendation."""
+        text = f"{self.title} {self.summary}".lower()
+        urgent_terms = ("失火", "火災", "地震", "停電", "事故", "颱風", "淹水", "封路")
+        watched_stocks = ("聯電", "臻鼎", "0050", "元大台灣50", "精材", "群創", "星宇", "星宇航空", "機器人")
+        event_terms = ("展覽", "市集", "演唱", "活動", "嘉年華", "旅遊", "餐廳", "優惠", "兌換")
+        if any(term in text for term in urgent_terms):
+            return "現在看｜可能影響今天行程"
+        if any(term.lower() in text for term in watched_stocks):
+            return "現在看｜和你的持股有關"
+        if any(term in text for term in event_terms):
+            return "有空看｜可能用得到的生活安排"
+        if self.category in {"AI／Codex", "遊戲與電競", "動漫與娛樂"}:
+            return "值得看｜花 1 分鐘掌握重點"
+        return "路過知道即可｜不必急著點開"
+
+    @property
+    def source_type_label(self) -> str:
+        """Show what kind of evidence a card is based on, not just its source name."""
+        source_set = set(self.sources)
+        if len(source_set) >= 2:
+            return "跨來源整理"
+        if "觀光署活動" in source_set:
+            return "官方公開資訊"
+        if "Google 熱門搜尋" in source_set:
+            return "搜尋熱度"
+        if source_set & {"Dcard", "Reddit", "TikTok", "YouTube"}:
+            return "社群討論"
+        if "GitHub" in source_set or "Hacker News" in source_set:
+            return "開發者社群"
+        return "媒體報導"
+
+    @property
     def sources(self) -> tuple[str, ...]:
         return tuple(sorted({item.source for item in self.items}))
 

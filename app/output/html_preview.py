@@ -45,17 +45,19 @@ class HtmlPreviewRenderer:
         style = "mission featured" if featured else "mission"
         category = escape(cluster.category, quote=True)
         title = escape(cluster.title, quote=True)
+        item_id = escape(f"{number}:{'featured' if featured else 'channel'}:{cluster.primary_url}", quote=True)
+        feedback_script = '''<script>if(!window.dailyItemFeedbackReady){window.dailyItemFeedbackReady=true;localStorage.removeItem("daily-intelligence-feedback-v1");const key="daily-intelligence-item-feedback-v1";const state=JSON.parse(localStorage.getItem(key)||'{"more":[],"less":[]}');const refresh=()=>document.querySelectorAll(".mission").forEach(card=>{const id=card.dataset.item||"";card.classList.toggle("is-muted",state.less.includes(id));card.classList.toggle("is-loved",state.more.includes(id));});const save=()=>localStorage.setItem(key,JSON.stringify(state));document.addEventListener("click",event=>{const button=event.target.closest(".feedback button");if(!button)return;event.preventDefault();event.stopImmediatePropagation();const card=button.closest(".mission");const id=card?.dataset.item||"";const list=button.dataset.vote==="more"?state.more:state.less;const other=button.dataset.vote==="more"?state.less:state.more;if(!list.includes(id))list.push(id);const index=other.indexOf(id);if(index>=0)other.splice(index,1);save();refresh();},true);document.addEventListener("DOMContentLoaded",()=>{const note=document.querySelector(".feedback-note");if(note)note.textContent="按「多看這則」或「少看這則」只會記住你按的這張卡，不會連動同分類其他內容。";refresh();});}</script>'''
         return (
-            f'<article class="{style}" style="--accent:{accent}" data-category="{category}" data-title="{title}"><div class="mission-top">'
+            f'<article class="{style}" style="--accent:{accent}" data-category="{category}" data-item="{item_id}" data-title="{title}"><div class="mission-top">'
             f'<span class="mission-number">\u4efb\u52d9 {number:02d}</span><span class="mission-icon">{icon}</span></div>'
             f'<div class="mission-category">{escape(cluster.category)} &#183; {len(cluster.sources)} \u500b\u4f86\u6e90</div>'
-            f'<h3>{escape(cluster.title)}</h3><p class="impact">{escape(cluster.attention_label)}</p>'
+            f'<h3>{escape(cluster.title)}</h3><p class="impact">{escape(cluster.decision_label)}</p>'
             f'<p class="summary"><b>30 \u79d2\u60c5\u5831\uff1a</b>{escape(cluster.summary)}</p>'
             f'<details><summary>\u5c55\u958b\u60c5\u5831\u5206\u6790</summary><p>{escape(cluster.why_it_appeared)}</p></details>'
             f'<div class="actions"><a class="button" href="{escape(cluster.primary_url, quote=True)}">\u9032\u5165\u60c5\u5831</a>'
             f'<a class="button ghost" href="{escape(translate_url, quote=True)}">\u7e41\u4e2d\u7ffb\u8b6f</a></div>'
-            f'<div class="feedback"><button type="button" data-vote="more">\u591a\u770b\u9019\u985e</button><button type="button" data-vote="less">\u5c11\u770b\u9019\u985e</button></div>'
-            f'<footer><span class="pulse"></span>{escape(cluster.signal_label)}</footer></article>'
+            f'<div class="feedback"><button type="button" data-vote="more">\u591a\u770b\u9019\u5247</button><button type="button" data-vote="less">\u5c11\u770b\u9019\u5247</button></div>'
+            f'<footer><span class="pulse"></span>{escape(cluster.source_type_label)} &#183; {escape(cluster.signal_label)}</footer>{feedback_script}</article>'
         )
 
     def render(self, report: DailyReport) -> str:
@@ -70,13 +72,15 @@ class HtmlPreviewRenderer:
             f'<div><b>{stock_count}</b><span>則持股</span></div>'
             f'<div><b>{source_count}</b><span>個來源</span></div></div>'
         )
-        primary_cards = "".join(self._mission_card(cluster, index, True) for index, cluster in enumerate(report.clusters[:3], 1))
+        featured_clusters = report.clusters[:3]
+        channel_clusters = report.clusters[3:]
+        primary_cards = "".join(self._mission_card(cluster, index, True) for index, cluster in enumerate(featured_clusters, 1))
         channels = ""
         cluster_numbers = {id(cluster): index for index, cluster in enumerate(report.clusters, 1)}
         active_categories = [
             (category, icon, accent)
             for category, icon, accent in self._categories
-            if any(cluster.category == category for cluster in report.clusters)
+            if any(cluster.category == category for cluster in channel_clusters)
         ]
         category_tabs = "".join(
             f'<a href="#{self._slug(category)}" style="--accent:{accent}">{icon}<span>{escape(category)}</span></a>'
@@ -84,7 +88,7 @@ class HtmlPreviewRenderer:
         )
         category_nav = f'<nav class="category-tabs">{category_tabs}</nav>' if category_tabs else ""
         for category, icon, accent in self._categories:
-            filtered = [cluster for cluster in report.clusters if cluster.category == category][:3]
+            filtered = [cluster for cluster in channel_clusters if cluster.category == category][:3]
             if filtered:
                 cards = "".join(self._mission_card(cluster, cluster_numbers[id(cluster)]) for cluster in filtered)
                 channels += f'<section id="{self._slug(category)}" class="channel" style="--accent:{accent}"><div class="channel-title"><span>{icon}</span><div><small>\u60c5\u5831\u983b\u9053</small><h2>{escape(category)} <em>\u6700\u591a 3 \u5247</em></h2></div></div><div class="mission-grid">{cards}</div></section>'
