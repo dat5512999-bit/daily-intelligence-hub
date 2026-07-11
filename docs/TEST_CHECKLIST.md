@@ -1,7 +1,11 @@
 # 測試清單
 
 - [ ] 首頁 Hero、Alert、Ranking、Compact List、Timeline 有各自用途，並非所有內容都使用同一種卡片。
-- [ ] 圖片卡只使用可由來源安全推導的 YouTube 官方縮圖或 GitHub Trending Owner Avatar。
+- [ ] 圖片卡只使用可由來源安全推導且可用的 YouTube 官方縮圖。
+- [ ] RSS 內的 HTML 片段、未翻譯的英文 Reddit／Hacker News 貼文不可出現在首頁。
+- [ ] AI、遊戲、動漫、持股、台中、生活與 GitHub 頻道都必須有中文快速入口；沒有可靠資料時須顯示空狀態。
+- [ ] 首頁僅先顯示今日必看三件事；分類內容預設收合。
+- [ ] 圖片載入失敗後，若沒有其餘圖片卡，整個圖片區必須消失，不可留下破圖或空白大框。
 
 - [ ] `python -m unittest discover -s tests -v` 全數通過。
 - [ ] `--demo` 在離線狀態建立 Markdown 與 HTML。

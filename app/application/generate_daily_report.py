@@ -11,6 +11,16 @@ from app.domain.ports import Source
 DISCOVERY_SOURCES = {"Dcard", "Google 熱門搜尋", "TikTok", "Reddit"}
 
 
+def _friendly_error(source_name: str, error: Exception) -> str:
+    """Do not expose Python/network diagnostics to a non-technical reader."""
+    detail = str(error)
+    if "urlopen error" in detail or "WinError" in detail or "HTTP Error" in detail:
+        return f"{source_name}：暫時連線失敗，下一次更新會再試。"
+    if len(detail) > 100:
+        return f"{source_name}：本輪資料格式異常，已略過並會在下次更新重試。"
+    return f"{source_name}：{detail}"
+
+
 class GenerateDailyReport:
     def __init__(self, sources: list[Source], profile: InterestProfile | None = None) -> None:
         self._sources = sources
@@ -23,7 +33,7 @@ class GenerateDailyReport:
             try:
                 collected.extend(source.fetch())
             except Exception as error:  # Source isolation is an explicit product requirement.
-                errors.append(f"{source.name}: {error}")
+                errors.append(_friendly_error(source.name, error))
         cleaned = filter_items(collected)
         relevant = [
             item for item in cleaned

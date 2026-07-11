@@ -7,6 +7,7 @@ from unittest.mock import patch
 from app.analyzer.filter import filter_items
 from app.analyzer.ranking import rank_items
 from app.application.generate_daily_report import GenerateDailyReport
+from app.application.generate_daily_report import _friendly_error
 from app.domain.models import IntelligenceItem
 from app.infrastructure.demo_data import DemoSource
 from app.output.html_preview import HtmlPreviewRenderer
@@ -49,6 +50,14 @@ class ReportTests(unittest.TestCase):
         tag = IntelligenceItem("TikTok 熱門標籤：#fff", "https://example.com/tiktok", "TikTok", now)
         code_like_tag = IntelligenceItem("TikTok 熱門標籤：#184d0a__a", "https://example.com/tiktok-code", "TikTok", now)
         self.assertEqual(filter_items([valid, meet, tag, code_like_tag]), [valid])
+
+    def test_filter_strips_feed_html_and_skips_untranslated_social_posts(self) -> None:
+        now = datetime.now(timezone.utc)
+        html_summary = IntelligenceItem("台中活動", "https://example.com/event", "Google News", now, "<table><tr><td>週末市集</td></tr></table>")
+        english_reddit = IntelligenceItem("I challenged GPT and it completed the challenge", "https://example.com/reddit", "Reddit", now, "<p>English post</p>")
+        cleaned = filter_items([html_summary, english_reddit])
+        self.assertEqual(len(cleaned), 1)
+        self.assertEqual(cleaned[0].summary, "週末市集")
 
     def test_ranking_rewards_cross_source_confirmation(self) -> None:
         now = datetime.now(timezone.utc)
@@ -100,19 +109,23 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(event.source_type_label, "官方公開資訊")
         self.assertEqual(trend.source_type_label, "搜尋熱度")
 
-    def test_only_source_owned_youtube_and_github_images_are_generated(self) -> None:
+    def test_only_youtube_official_thumbnail_is_used_as_an_image(self) -> None:
         now = datetime.now(timezone.utc)
         youtube = rank_items([IntelligenceItem("影片", "https://www.youtube.com/watch?v=abc123", "YouTube", now)])[0]
         github = rank_items([IntelligenceItem("owner/repo", "https://github.com/owner/repo", "GitHub Trending", now)])[0]
         news = rank_items([IntelligenceItem("一般新聞", "https://example.com/news", "Google News", now)])[0]
         self.assertIn("i.ytimg.com/vi/abc123", youtube.image_url)
-        self.assertIn("github.com/owner.png", github.image_url)
+        self.assertEqual(github.image_url, "")
         self.assertEqual(news.image_url, "")
 
     def test_report_continues_when_one_source_fails(self) -> None:
         report = GenerateDailyReport([DemoSource(), FailingSource()]).run("demo")
         self.assertTrue(report.clusters)
         self.assertEqual(len(report.source_errors), 1)
+
+    def test_network_errors_are_reader_friendly(self) -> None:
+        message = _friendly_error("Google News", OSError("<urlopen error [WinError 10013] access denied>"))
+        self.assertEqual(message, "Google News：暫時連線失敗，下一次更新會再試。")
 
     def test_live_report_with_only_one_source_is_never_called_healthy(self) -> None:
         now = datetime.now(timezone.utc)
@@ -153,9 +166,9 @@ class ReportTests(unittest.TestCase):
         report = GenerateDailyReport([DemoSource()]).run("demo")
         preview = HtmlPreviewRenderer().render(report)
         self.assertIn('class="hero"', preview)
-        self.assertIn("RANKING", preview)
-        self.assertIn("MARKET", preview)
-        self.assertIn("TODAY", preview)
+        self.assertIn("大家正在關注", preview)
+        self.assertIn("你的關注頻道", preview)
+        self.assertIn("你的持股雷達", preview)
         self.assertNotIn("category-tabs", preview)
 
     def test_official_lifestyle_event_source_extracts_events_not_navigation(self) -> None:
@@ -186,17 +199,17 @@ class ReportTests(unittest.TestCase):
         self.assertIn("manifest.webmanifest", preview)
         self.assertIn("app-icon.svg", preview)
         self.assertIn("今天紅什麼", preview)
-        self.assertIn("RANKING", preview)
-        self.assertIn("今天可去／可安排", preview)
+        self.assertIn("大家正在關注", preview)
+        self.assertIn("想看哪類，再點開就好", preview)
         self.assertIn("台灣時間", preview)
         self.assertNotIn("UTC", preview)
         self.assertIn("則持股", preview)
-        self.assertIn("多看這則", preview)
-        self.assertIn("少看這則", preview)
+        self.assertIn("有興趣", preview)
+        self.assertIn("少一點", preview)
         self.assertIn("data-item=", preview)
-        self.assertIn("daily-intelligence-item-feedback-v1", preview)
+        self.assertIn("daily-intelligence-item-feedback-v2", preview)
         self.assertIn("情報判讀", preview)
-        self.assertIn("繁中翻譯", preview)
+        self.assertIn("翻成繁中", preview)
         self.assertIn("白話重點", markdown)
         self.assertIn("建議：", markdown)
         self.assertIn("社群討論", preview)
@@ -238,9 +251,25 @@ class ReportTests(unittest.TestCase):
         ]))
         report = type("Report", (), {"generated_at": now, "clusters": clusters, "source_errors": (), "mode": "demo", "source_count": 3, "health_label": "來源正常", "health_note": "測試"})()
         preview = HtmlPreviewRenderer().render(report)
-        self.assertIn("VISUAL PICKS", preview)
+        self.assertIn("影片精選", preview)
         self.assertIn("i.ytimg.com/vi/abc123", preview)
-        self.assertIn("github.com/owner.png", preview)
+        self.assertNotIn("github.com/owner.png", preview)
+        self.assertIn("if(!section.querySelector('.image-card'))section.remove()", preview)
+
+    def test_dashboard_prioritizes_local_urgent_then_stock_before_ai(self) -> None:
+        now = datetime.now(timezone.utc)
+        clusters = tuple(rank_items([
+            IntelligenceItem("Codex 新功能", "https://example.com/ai", "Google News", now, category="AI／Codex"),
+            IntelligenceItem("聯電重大公告", "https://example.com/stock", "Google News", now, category="股票與市場"),
+            IntelligenceItem("台中火災封路", "https://example.com/local", "Google News", now, category="台中現在要注意"),
+        ]))
+        preview = HtmlPreviewRenderer().render(type("Report", (), {
+            "generated_at": now, "clusters": clusters, "source_errors": (), "mode": "demo",
+            "source_count": 1, "health_label": "來源正常", "health_note": "測試",
+        })())
+        self.assertLess(preview.index("<h1>台中火災封路</h1>"), preview.index("<h3>聯電重大公告</h3>"))
+        self.assertIn('data-channel-link=', preview)
+        self.assertIn('daily-intelligence-item-feedback-v2', preview)
 
     def test_dcard_lifestyle_mapping_and_taichung_exception(self) -> None:
         self.assertEqual(DcardSource._category("閒聊", "最近小紅書流行餐廳", ""), "生活流行")

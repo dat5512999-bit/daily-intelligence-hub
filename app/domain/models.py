@@ -128,9 +128,6 @@ class IntelligenceCluster:
         if item.source == "YouTube":
             video_id = parse_qs(urlparse(item.url).query).get("v", [""])[0]
             return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg" if video_id else ""
-        if item.source == "GitHub Trending":
-            owner = urlparse(item.url).path.strip("/").split("/", 1)[0]
-            return f"https://github.com/{owner}.png?size=160" if owner else ""
         return ""
 
 

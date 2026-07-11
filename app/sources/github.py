@@ -18,7 +18,7 @@ class GitHubTrendingSource:
         result: list[IntelligenceItem] = []
         for repo in dict.fromkeys(repositories):
             if repo.count("/") == 1 and len(result) < 12:
-                result.append(IntelligenceItem(repo, f"https://github.com/{repo}", self.name, utc_now(), "Trending open-source repository on GitHub today.", 0, "GitHub"))
+                result.append(IntelligenceItem(f"GitHub 今日熱門專案：{repo}", f"https://github.com/{repo}", self.name, utc_now(), "今天在 GitHub 熱門榜出現的開源專案；是否值得點開，請依名稱和原始介紹判斷。", 0, "GitHub"))
         if not result:
             raise RuntimeError("No repositories were found; GitHub page format may have changed.")
         return result

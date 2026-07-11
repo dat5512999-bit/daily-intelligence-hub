@@ -12,8 +12,7 @@ class DemoSource:
         now = datetime.now(timezone.utc)
         return [
             IntelligenceItem("Codex 與 GPT 工作流程的新整合", "https://example.com/codex", "GitHub", now - timedelta(hours=2), "AI 工具的整合可能讓你未來少切換幾個服務，就能完成更多工作。", 1250, "AI／Codex"),
-            IntelligenceItem("你關注的 AI 工具本週影片整理", "https://www.youtube.com/watch?v=demoAI2026", "YouTube", now - timedelta(hours=3), "只在你選定的公開頻道有新影片時顯示縮圖，方便快速決定要不要看。", 420, "AI／Codex"),
-            IntelligenceItem("openai/codex 成為 GitHub 今日熱門專案", "https://github.com/openai/codex", "GitHub Trending", now - timedelta(hours=2), "GitHub 熱門專案使用 Owner Avatar 作為識別，不會任意抓取網路圖片。", 700, "GitHub"),
+            IntelligenceItem("GitHub 今日熱門專案：openai/codex", "https://github.com/openai/codex", "GitHub Trending", now - timedelta(hours=2), "今天在 GitHub 熱門榜出現的開源專案；是否值得點開，請依名稱和原始介紹判斷。", 700, "GitHub"),
             IntelligenceItem("GTA 與幻獸帕魯玩家正在討論的新內容", "https://example.com/games", "Reddit", now - timedelta(hours=3), "遊戲社群正在討論更新內容與接下來值得玩的活動。", 820, "遊戲與電競"),
             IntelligenceItem("幻獸帕魯 1.0 大型更新與價格消息", "https://example.com/palworld-1", "Google News", now - timedelta(hours=3), "這類消息可能包含版本更新、價格、Game Pass 或玩家回流資訊，適合遊戲玩家快速掃過。", 0, "遊戲與電競"),
             IntelligenceItem("幻獸帕魯卡牌與周邊話題升溫", "https://example.com/palworld-2", "Google News", now - timedelta(hours=4), "遊戲熱度常會延伸到卡牌、周邊與收藏市場，值得留意是否出圈。", 0, "遊戲與電競"),
