@@ -31,7 +31,7 @@ class MarkdownRenderer:
         categories: dict[str, list[str]] = defaultdict(list)
         for cluster in report.clusters:
             categories[cluster.category].append(f"- [{cluster.title}]({cluster.primary_url})")
-        for category in ("社群冷門雷達", "搜尋趨勢", "短影音趨勢", "AI／Codex", "遊戲與電競", "動漫與娛樂", "台中現在要注意", "台中好康與活動", "股票與市場", "AI", "GitHub", "科技", "商業", "全球重要事件", "健康生活", "美食生活", "旅遊生活", "娛樂文化", "影音生活", "生活話題", "職場生活", "Dcard 熱門"):
+        for category in ("社群冷門雷達", "搜尋趨勢", "短影音趨勢", "AI／Codex", "年輕人流行", "遊戲與電競", "動漫與娛樂", "運動焦點", "台中現在要注意", "台中好康與活動", "股票與市場", "AI", "GitHub", "科技", "商業", "全球重要事件", "健康生活", "美食生活", "旅遊生活", "娛樂文化", "影音生活", "生活話題", "職場生活", "Dcard 熱門"):
             if categories[category]:
                 lines.extend([f"## {category}", *categories[category], ""])
         if report.clusters:
