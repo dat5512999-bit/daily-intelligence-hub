@@ -39,4 +39,7 @@ class GenerateDailyReport:
             item for item in cleaned
             if self._profile is None or self._profile.matches(item) or item.source in DISCOVERY_SOURCES
         ]
-        return DailyReport(clusters=tuple(rank_items(relevant, limit=24)), source_errors=tuple(errors), mode=mode)
+        # Nine personal channels × three items, plus room for discovery signals.
+        # The renderer still stays compact because every channel is collapsed.
+        category_capacity = (len(self._profile.categories) * 3 + 9) if self._profile else 36
+        return DailyReport(clusters=tuple(rank_items(relevant, limit=max(36, category_capacity))), source_errors=tuple(errors), mode=mode)
