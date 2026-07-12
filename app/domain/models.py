@@ -72,6 +72,8 @@ class IntelligenceCluster:
         lifestyle_terms = ("dcard", "小紅書", "餐廳", "美食", "穿搭", "景點", "打卡", "網美", "甜點", "咖啡", "開箱", "種草", "感情", "有趣", "閒聊", "迷因")
         if any(word in text for word in lifestyle_terms):
             return "生活苗頭：可能是年輕人正在聊、正在收藏或正在跟風"
+        if self.category == "運動焦點" or any(word in text for word in ("nba", "籃球", "足球", "挪威", "球員交易", "季後賽", "總冠軍")):
+            return "運動焦點：可能是賽果、球員交易或接下來值得看的比賽"
         if any(word in text for word in ("美股", "台股", "股市", "匯率", "利率", "油價", "反彈", "休市")):
             return "市場有變化：可能影響投資或明天的討論"
         if any(word in text for word in ("優惠", "免費", "兌換", "可以換", "特價", "折扣", "贈品", "好康")):
@@ -93,7 +95,7 @@ class IntelligenceCluster:
             return "現在看｜和你的持股有關"
         if any(term in text for term in event_terms):
             return "有空看｜可能用得到的生活安排"
-        if self.category in {"AI／Codex", "遊戲與電競", "動漫與娛樂"}:
+        if self.category in {"AI／Codex", "年輕人流行", "遊戲與電競", "動漫與娛樂", "運動焦點"}:
             return "值得看｜花 1 分鐘掌握重點"
         return "路過知道即可｜不必急著點開"
 
