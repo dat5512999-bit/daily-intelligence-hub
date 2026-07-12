@@ -2,8 +2,9 @@ name: Daily Intelligence Report
 
 on:
   schedule:
-    # 每小時第 17 分鐘執行；避開整點的 GitHub 排程尖峰。
-    - cron: "17 * * * *"
+    # Two off-peak attempts per hour. GitHub scheduled jobs can be delayed,
+    # so :17 and :47 make the free Pages report more resilient than one run.
+    - cron: "17,47 * * * *"
   workflow_dispatch:
 
 permissions:
