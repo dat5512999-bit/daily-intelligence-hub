@@ -2,7 +2,8 @@ name: Daily Intelligence Report
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    # 每小時第 17 分鐘執行；避開整點的 GitHub 排程尖峰。
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
