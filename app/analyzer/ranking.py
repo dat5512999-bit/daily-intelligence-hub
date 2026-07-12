@@ -11,11 +11,35 @@ from app.analyzer.summary import summarize
 from app.domain.models import IntelligenceCluster, IntelligenceItem
 
 STOP_WORDS = {"the", "a", "an", "and", "for", "with", "from", "this", "that", "how", "what", "new", "to", "of", "in", "on", "is"}
-CATEGORY_BONUS = {"台中現在要注意": 30, "AI／Codex": 25, "生活流行": 25, "社群冷門雷達": 24, "搜尋趨勢": 23, "短影音趨勢": 22, "遊戲與電競": 21, "動漫與娛樂": 20, "股票與市場": 18, "台中好康與活動": 17}
+CATEGORY_BONUS = {
+    "台中現在要注意": 30,
+    "年輕人流行": 27,
+    "AI／Codex": 26,
+    "運動焦點": 25,
+    "生活流行": 24,
+    "社群冷門雷達": 23,
+    "搜尋趨勢": 22,
+    "短影音趨勢": 21,
+    "遊戲與電競": 20,
+    "動漫與娛樂": 19,
+    "股票與市場": 18,
+    "台中好康與活動": 17,
+    "GitHub": 16,
+}
 CATEGORY_LIMIT = 3
+GAME_FAMILIES = {
+    "palworld": ("幻獸帕魯", "palworld", "帕魯", "pocketpair"),
+    "gta": ("gta", "grand theft auto"),
+    "sf": ("sf online", "special force"),
+    "forza": ("地平線", "forza"),
+    "warcraft": ("魔獸", "warcraft", "寒冰霸權", "寒冰爭霸"),
+}
 
 
 def _key(title: str) -> frozenset[str]:
+    # The shared display prefix must not merge every Trending repository into
+    # one cluster.  The repository name itself is the meaningful topic.
+    title = re.sub(r"^GitHub 今日熱門專案[：:]\s*", "", title, flags=re.IGNORECASE)
     english_words = {word for word in re.findall(r"[a-z0-9]{3,}", title.lower()) if word not in STOP_WORDS}
     chinese_text = "".join(re.findall(r"[\u4e00-\u9fff]+", title))
     chinese_pairs = {chinese_text[index:index + 2] for index in range(max(0, len(chinese_text) - 1))}
@@ -52,26 +76,43 @@ def rank_items(items: list[IntelligenceItem], limit: int = 24) -> list[Intellige
 
 
 def _balance_categories(clusters: list[IntelligenceCluster], limit: int) -> list[IntelligenceCluster]:
-    """Keep one noisy category from taking over the whole lazy-reader report."""
+    """Fill the first, second and third slot of every category in rounds.
+
+    The previous implementation guaranteed only one item per category, then let
+    globally high-scoring categories consume the remaining capacity.  A round-
+    robin pass makes the three-item UI promise real whenever a source supplied
+    three distinct candidates.
+    """
     selected: list[IntelligenceCluster] = []
     used_titles: set[str] = set()
     category_counts: defaultdict[str, int] = defaultdict(int)
+    used_families: defaultdict[str, set[str]] = defaultdict(set)
     categories = sorted({cluster.category for cluster in clusters}, key=lambda category: CATEGORY_BONUS.get(category, 0), reverse=True)
 
-    for category in categories:
-        candidate = next((cluster for cluster in clusters if cluster.category == category and cluster.title not in used_titles), None)
-        if candidate is not None and len(selected) < limit:
+    for _round in range(CATEGORY_LIMIT):
+        for category in categories:
+            if len(selected) >= limit:
+                return selected
+            candidates = [cluster for cluster in clusters if cluster.category == category and cluster.title not in used_titles]
+            candidate = next(
+                (cluster for cluster in candidates if _topic_family(cluster) not in used_families[category]),
+                candidates[0] if candidates else None,
+            )
+            if candidate is None:
+                continue
             selected.append(candidate)
             used_titles.add(candidate.title)
             category_counts[candidate.category] += 1
-
-    for cluster in clusters:
-        if len(selected) >= limit:
-            break
-        if cluster.title in used_titles or category_counts[cluster.category] >= CATEGORY_LIMIT:
-            continue
-        selected.append(cluster)
-        used_titles.add(cluster.title)
-        category_counts[cluster.category] += 1
+            used_families[category].add(_topic_family(candidate))
 
     return selected
+
+
+def _topic_family(cluster: IntelligenceCluster) -> str:
+    """Keep three slots from becoming three articles about one game."""
+    lowered = cluster.title.lower()
+    if cluster.category == "遊戲與電競":
+        for family, terms in GAME_FAMILIES.items():
+            if any(term in lowered for term in terms):
+                return family
+    return lowered
