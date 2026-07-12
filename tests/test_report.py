@@ -86,6 +86,32 @@ class ReportTests(unittest.TestCase):
         self.assertIn("動漫與娛樂", categories)
         self.assertLessEqual(categories.count("股票與市場"), 3)
 
+    def test_ranking_fills_three_slots_per_category_in_rounds(self) -> None:
+        now = datetime.now(timezone.utc)
+        titles = {
+            "年輕人流行": ("桃子水搶購", "拒絕溝通現象", "海外打卡景點"),
+            "遊戲與電競": ("GTA 六代消息", "SF 懷舊玩家", "魔獸改版焦點"),
+            "運動焦點": ("NBA 球員異動", "台灣籃球賽程", "挪威足球近況"),
+            "GitHub": ("Codex 開源專案", "瀏覽器代理工具", "網頁擷取框架"),
+        }
+        items = [
+            IntelligenceItem(title, f"https://example.com/{category}/{index}", "Google News", now, category=category)
+            for category, category_titles in titles.items()
+            for index, title in enumerate(category_titles)
+        ]
+        clusters = rank_items(items, limit=12)
+        for category in ("年輕人流行", "遊戲與電競", "運動焦點", "GitHub"):
+            self.assertEqual(sum(cluster.category == category for cluster in clusters), 3)
+
+    def test_github_trending_prefix_does_not_merge_different_repositories(self) -> None:
+        now = datetime.now(timezone.utc)
+        clusters = rank_items([
+            IntelligenceItem("GitHub 今日熱門專案：openai/codex", "https://github.com/openai/codex", "GitHub Trending", now, category="GitHub"),
+            IntelligenceItem("GitHub 今日熱門專案：browser-use/browser-use", "https://github.com/browser-use/browser-use", "GitHub Trending", now, category="GitHub"),
+            IntelligenceItem("GitHub 今日熱門專案：unclecode/crawl4ai", "https://github.com/unclecode/crawl4ai", "GitHub Trending", now, category="GitHub"),
+        ])
+        self.assertEqual(len(clusters), 3)
+
     def test_single_social_source_is_never_presented_as_verified(self) -> None:
         now = datetime.now(timezone.utc)
         cluster = rank_items([IntelligenceItem("近期生活話題", "https://example.com/post", "Dcard", now)])[0]
@@ -209,6 +235,9 @@ class ReportTests(unittest.TestCase):
         self.assertIn("data-item=", preview)
         self.assertIn("daily-intelligence-item-feedback-v2", preview)
         self.assertIn("情報判讀", preview)
+        self.assertIn("檢查最新頁面", preview)
+        self.assertIn("手動產生新報告", preview)
+        self.assertIn("https://github.com/dat5512999-bit/daily-intelligence-hub/actions/workflows/daily-report.yml", preview)
         self.assertIn("翻成繁中", preview)
         self.assertIn("白話重點", markdown)
         self.assertIn("建議：", markdown)
@@ -283,6 +312,18 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(profile.matches(forza))
         self.assertTrue(profile.matches(warcraft))
 
+    def test_profile_keeps_generic_github_trending_projects(self) -> None:
+        profile = load_interest_profile()
+        now = datetime.now(timezone.utc)
+        repository = IntelligenceItem(
+            "GitHub 今日熱門專案：some-owner/useful-tool",
+            "https://github.com/some-owner/useful-tool",
+            "GitHub Trending",
+            now,
+            category="GitHub",
+        )
+        self.assertTrue(profile.matches(repository))
+
     def test_youtube_source_is_safe_without_configured_channels(self) -> None:
         """An empty starter configuration must not block a Live report."""
         self.assertEqual(YouTubeSource().fetch(), [])
@@ -319,6 +360,28 @@ class ReportTests(unittest.TestCase):
         next_hour = InterestNewsSource._rotated_queries(("A", "B", "C", "D", "E", "F"), 1)
         self.assertEqual(first, ["A", "B", "C", "D", "E"])
         self.assertEqual(next_hour, ["B", "C", "D", "E", "F"])
+
+    def test_game_query_window_is_not_only_palworld(self) -> None:
+        profile = load_interest_profile()
+        games = next(category for category in profile.categories if category.name == "遊戲與電競")
+        selected = InterestNewsSource._rotated_queries(games.queries, 0)
+        joined = " ".join(selected).lower()
+        self.assertIn("幻獸帕魯", joined)
+        self.assertIn("gta", joined)
+        self.assertIn("sf online", joined)
+        self.assertIn("地平線", joined)
+        self.assertIn("魔獸", joined)
+
+    def test_dashboard_has_youth_and_sports_channels_with_three_demo_items(self) -> None:
+        report = GenerateDailyReport([DemoSource()], load_interest_profile()).run("demo")
+        preview = HtmlPreviewRenderer().render(report)
+        self.assertIn("年輕人現在紅什麼", preview)
+        self.assertIn("運動與 NBA", preview)
+        self.assertIn("萊爾富桃子水", preview)
+        self.assertIn("NBA 球員交易", preview)
+        self.assertIn("挪威足球", preview)
+        self.assertIn("browser-use/browser-use", preview)
+        self.assertIn("unclecode/crawl4ai", preview)
 
 
 if __name__ == "__main__":
