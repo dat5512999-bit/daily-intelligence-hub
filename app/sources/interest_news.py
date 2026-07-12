@@ -47,9 +47,16 @@ class InterestNewsSource:
 
     @classmethod
     def _rotated_queries(cls, queries: tuple[str, ...] | list[str], offset: int) -> list[str]:
-        """Return a different five-query window each hour, preserving profile order."""
+        """Return a rotating but topic-spread query window every hour.
+
+        Categories such as games contain several franchises.  Spreading picks
+        across the whole list avoids spending one update on five variants of
+        the same title (for example, only Palworld).
+        """
         if not queries:
             return []
         size = min(cls._queries_per_category, len(queries))
         start = offset % len(queries)
+        # Query lists are intentionally interleaved by topic in interests.json,
+        # so a rotating consecutive window contains several different subjects.
         return [queries[(start + index) % len(queries)] for index in range(size)]
