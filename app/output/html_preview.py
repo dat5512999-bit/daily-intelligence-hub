@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from html import escape
 from urllib.parse import quote
 
@@ -82,6 +82,15 @@ class HtmlPreviewRenderer:
             f'<div class="channel-body">{content}</div></details>'
         )
 
+    @staticmethod
+    def _next_scheduled_time(generated_at: datetime) -> datetime:
+        """Match the two GitHub Actions schedule minutes shown to the reader."""
+        for minute in (17, 47):
+            candidate = generated_at.replace(minute=minute, second=0, microsecond=0)
+            if candidate > generated_at:
+                return candidate
+        return (generated_at + timedelta(hours=1)).replace(minute=17, second=0, microsecond=0)
+
     def render(self, report: DailyReport) -> str:
         clusters = [cluster for cluster in report.clusters if self._is_chinese_readable(cluster)]
         picks = sorted(clusters, key=self._priority)[:3]
@@ -101,9 +110,7 @@ class HtmlPreviewRenderer:
         channels = "".join(self._channel(category, icon, label, clusters) for category, icon, label in self.CHANNELS)
         shortcuts = "".join(f'<a href="#{quote(category, safe="")}" data-channel-link="{quote(category, safe="")}">{icon} {label}</a>' for category, icon, label in self.CHANNELS)
         mode = "離線範例" if report.mode == "demo" else report.health_label
-        next_label = report.generated_at.replace(minute=17, second=0, microsecond=0)
-        if next_label <= report.generated_at:
-            next_label += timedelta(hours=1)
+        next_label = self._next_scheduled_time(report.generated_at)
         empty = '<section class="empty">這一輪沒有可閱讀的繁中情報，系統不會用英文原文或範例資料冒充結果；下一次會自動再抓。</section>' if not clusters else ""
         manual_update_url = "https://github.com/dat5512999-bit/daily-intelligence-hub/actions/workflows/daily-report.yml"
         return f'''<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#101722"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="今天紅什麼"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="app-icon.svg"><link rel="apple-touch-icon" href="app-icon.svg"><title>今天紅什麼</title><style>
