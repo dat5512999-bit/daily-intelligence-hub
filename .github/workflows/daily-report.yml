@@ -1,6 +1,8 @@
 name: Daily Intelligence Report
 
 on:
+  push:
+    branches: [main]
   schedule:
     # Two off-peak attempts per hour. GitHub scheduled jobs can be delayed,
     # so :17 and :47 make the free Pages report more resilient than one run.
@@ -28,8 +30,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run report acceptance tests
+        run: python -m unittest discover -s tests -v
+
       - name: Generate daily report
-        run: python main.py --live
+        run: python main.py --live --restore-published-state
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
