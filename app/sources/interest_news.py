@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as element_tree
+import re
+from html import unescape
 from email.utils import parsedate_to_datetime
 from urllib.parse import quote_plus
 
@@ -40,7 +42,13 @@ class InterestNewsSource:
                 for item in root.findall("./channel/item")[:8]:
                     title = item.findtext("title", default="未命名新聞")
                     published = item.findtext("pubDate", default="")
-                    result.append(IntelligenceItem(title, item.findtext("link", default=""), self.name, parsedate_to_datetime(published) if published else utc_now(), f"這則消息符合你關注的「{category.name}」。開啟原文可確認完整內容與來源。", 0, category.name))
+                    # News RSS descriptions often contain only linked headlines.
+                    # Preserve an actual excerpt only when it differs from the title.
+                    description = " ".join(re.sub(r"<[^>]+>", " ", unescape(item.findtext("description", default=""))).split())
+                    headline = title.rsplit(" - ", 1)[0].strip()
+                    if headline in description or len(description) < 25:
+                        description = ""
+                    result.append(IntelligenceItem(title, item.findtext("link", default=""), self.name, parsedate_to_datetime(published) if published else utc_now(), description, 0, category.name))
         if not result and failed_queries:
             raise RuntimeError("Google News 暫時回傳異常格式，已略過；下次更新會再嘗試。")
         return result
