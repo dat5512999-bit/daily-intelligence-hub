@@ -12,6 +12,8 @@ from app.analyzer.topics import topic_for
 from app.domain.models import DailyReport, IntelligenceItem
 from app.infrastructure.report_state import compare_report, load_snapshot, save_snapshot
 from app.output.html_preview import HtmlPreviewRenderer
+from unittest.mock import patch
+from app.sources.github import GitHubTrendingSource
 
 
 class QualityTests(unittest.TestCase):
@@ -78,6 +80,15 @@ class QualityTests(unittest.TestCase):
         self.assertIn("可能延遲", html)
         self.assertNotIn("預計下次", html)
         self.assertNotIn('class="hero-mark"', html)
+
+    def test_github_trending_ignores_navigation_links(self) -> None:
+        html = '<a href="/sponsors/explore">Sponsors</a><a href="/trending/developers">Developers</a>'
+        html += ''.join(f'<article class="Box-row"><h2><a href="/owner/repo{number}">Repo</a></h2><p>真正的專案用途介紹</p></article>' for number in range(3))
+        with patch("app.sources.github.get_text", return_value=html):
+            items = GitHubTrendingSource().fetch()
+        self.assertEqual(len(items), 3)
+        self.assertTrue(all(item.url.startswith("https://github.com/owner/repo") for item in items))
+        self.assertTrue(all(item.summary == "真正的專案用途介紹" for item in items))
 
 
 if __name__ == "__main__":
