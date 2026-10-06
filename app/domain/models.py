@@ -139,6 +139,10 @@ class DailyReport:
     clusters: tuple[IntelligenceCluster, ...] = ()
     source_errors: tuple[str, ...] = ()
     mode: str = "demo"
+    last_content_change_at: datetime | None = None
+    new_item_count: int = 0
+    changed_item_count: int = 0
+    comparison_available: bool = False
 
     @property
     def source_count(self) -> int:

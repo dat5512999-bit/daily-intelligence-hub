@@ -175,18 +175,27 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(report.health_label, "部分來源受限")
         self.assertGreaterEqual(report.source_count, 3)
 
-    def test_workflow_runs_hourly_away_from_the_top_of_the_hour(self) -> None:
+    def test_workflow_runs_twice_hourly_away_from_the_top_of_the_hour(self) -> None:
         from pathlib import Path
 
         workflow = Path(".github/workflows/daily-report.yml").read_text(encoding="utf-8")
-        self.assertIn('cron: "17 * * * *"', workflow)
+        self.assertIn('cron: "17,47 * * * *"', workflow)
+
+    def test_next_schedule_label_matches_twice_hourly_workflow(self) -> None:
+        renderer = HtmlPreviewRenderer()
+        now = datetime(2026, 7, 12, 10, 20, tzinfo=timezone.utc)
+        self.assertEqual(renderer._next_scheduled_time(now).minute, 47)
+        at_second_slot = datetime(2026, 7, 12, 10, 47, tzinfo=timezone.utc)
+        next_hour = renderer._next_scheduled_time(at_second_slot)
+        self.assertEqual((next_hour.hour, next_hour.minute), (11, 17))
 
     def test_feedback_is_scoped_to_one_dashboard_item(self) -> None:
         now = datetime.now(timezone.utc)
         cluster = rank_items([IntelligenceItem("同一篇文章", "https://example.com/one", "Google News", now)])[0]
         renderer = HtmlPreviewRenderer()
         compact = renderer._compact_row(cluster, 1, "update")
-        self.assertIn('data-item="update:1:https://example.com/one"', compact)
+        self.assertEqual(renderer._item_id(cluster, 1, "update"), renderer._item_id(cluster, 3, "channel"))
+        self.assertIn(f'data-item="{renderer._item_id(cluster, 1, "update")}"', compact)
 
     def test_dashboard_uses_mixed_components_not_category_card_grid(self) -> None:
         report = GenerateDailyReport([DemoSource()]).run("demo")
@@ -230,10 +239,10 @@ class ReportTests(unittest.TestCase):
         self.assertIn("台灣時間", preview)
         self.assertNotIn("UTC", preview)
         self.assertIn("則持股", preview)
-        self.assertIn("有興趣", preview)
-        self.assertIn("少一點", preview)
+        self.assertIn("收藏這篇", preview)
+        self.assertIn("隱藏這篇", preview)
         self.assertIn("data-item=", preview)
-        self.assertIn("daily-intelligence-item-feedback-v2", preview)
+        self.assertIn("daily-intelligence-preferences-v3", preview)
         self.assertIn("情報判讀", preview)
         self.assertIn("檢查最新頁面", preview)
         self.assertIn("手動產生新報告", preview)
@@ -285,7 +294,7 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn("github.com/owner.png", preview)
         self.assertIn("if(!section.querySelector('.image-card'))section.remove()", preview)
 
-    def test_dashboard_prioritizes_local_urgent_then_stock_before_ai(self) -> None:
+    def test_dashboard_separates_local_alert_from_stock_and_ai_briefing(self) -> None:
         now = datetime.now(timezone.utc)
         clusters = tuple(rank_items([
             IntelligenceItem("Codex 新功能", "https://example.com/ai", "Google News", now, category="AI／Codex"),
@@ -296,9 +305,9 @@ class ReportTests(unittest.TestCase):
             "generated_at": now, "clusters": clusters, "source_errors": (), "mode": "demo",
             "source_count": 1, "health_label": "來源正常", "health_note": "測試",
         })())
-        self.assertLess(preview.index("<h1>台中火災封路</h1>"), preview.index("<h3>聯電重大公告</h3>"))
+        self.assertLess(preview.index("<h3>台中火災封路</h3>"), preview.index("<h1>聯電重大公告</h1>"))
         self.assertIn('data-channel-link=', preview)
-        self.assertIn('daily-intelligence-item-feedback-v2', preview)
+        self.assertIn('daily-intelligence-preferences-v3', preview)
 
     def test_dcard_lifestyle_mapping_and_taichung_exception(self) -> None:
         self.assertEqual(DcardSource._category("閒聊", "最近小紅書流行餐廳", ""), "生活流行")
