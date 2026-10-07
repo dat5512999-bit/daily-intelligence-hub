@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 
 from app.analyzer.summary import summarize
+from app.analyzer.github_guide import repository_guide
 from app.domain.models import IntelligenceCluster, IntelligenceItem
 
 STOP_WORDS = {"the", "a", "an", "and", "for", "with", "from", "this", "that", "how", "what", "new", "to", "of", "in", "on", "is"}
@@ -25,6 +26,7 @@ CATEGORY_BONUS = {
     "股票與市場": 18,
     "台中好康與活動": 17,
     "GitHub": 16,
+    "冷知識": -20,
 }
 CATEGORY_LIMIT = 3
 GAME_FAMILIES = {
@@ -111,6 +113,9 @@ def _balance_categories(clusters: list[IntelligenceCluster], limit: int) -> list
 def _topic_family(cluster: IntelligenceCluster) -> str:
     """Keep three slots from becoming three articles about one game."""
     lowered = cluster.title.lower()
+    if cluster.category == "GitHub":
+        guide = repository_guide(cluster)
+        return guide.purpose if guide.matched else lowered
     if cluster.category == "遊戲與電競":
         for family, terms in GAME_FAMILIES.items():
             if any(term in lowered for term in terms):

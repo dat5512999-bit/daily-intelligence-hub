@@ -23,3 +23,9 @@ class Source(Protocol):
 CLI 新增 `--restore-published-state`，只在 Live 模式讀取此專案的公開比較紀錄。Demo 使用獨立 `demo-state.json`，不連網。
 
 `topic_for(title)` 對具名主題回傳標籤；無法識別時不提供主題偏好。瀏覽器 localStorage key 為 `daily-intelligence-preferences-v3`，包含單篇 `saved`、`hidden` 與主題 `topics`。收藏 ID 不依畫面位置變動。
+
+## 0.9.25｜GitHub 使用指南與冷知識（2026-10-07）
+
+IntelligenceItem 新增 repo_description: str = ''，保留作者簡介供用途分類。repository_guide(cluster) 回傳 RepositoryGuide（purpose、example、steps、audience、evidence、matched）。KnowledgeSource(day: date | None) 符合 Source.fetch，離線回傳三則固定查核日期的資料。未加入網頁服務或外部 API。
+
+限制：GitHub 使用例子是用途分類說明，非全文翻譯、實測或免費使用保證；冷知識目前六則每日輪替三則，非即時新聞。未引入資料庫、登入或付費服務。

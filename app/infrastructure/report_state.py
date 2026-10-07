@@ -35,7 +35,7 @@ def load_snapshot(path: Path) -> dict[str, Any]:
 def compare_report(report: DailyReport, previous: dict[str, Any]) -> tuple[DailyReport, dict[str, Any]]:
     """Count new URLs and revised title/summary separately from a fetch time."""
     fingerprints = {
-        article_key(cluster): hashlib.sha256(f"{cluster.title}\n{cluster.summary}".encode("utf-8")).hexdigest()
+        article_key(cluster): hashlib.sha256(f"{cluster.title}\n{cluster.summary}\n{cluster.items[0].repo_description}".encode("utf-8")).hexdigest()
         for cluster in report.clusters
     }
     old = previous.get("fingerprints")

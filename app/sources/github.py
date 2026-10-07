@@ -28,10 +28,11 @@ class GitHubTrendingSource:
             seen.add(repo)
             paragraph = re.search(r"<p\b[^>]*>(.*?)</p>", article, re.DOTALL | re.IGNORECASE)
             description = " ".join(re.sub(r"<[^>]+>", " ", unescape(paragraph.group(1))).split()) if paragraph else ""
+            original_description = description[:1000]
             # An untranslated description cannot serve as a Chinese briefing.
             if not re.search(r"[\u4e00-\u9fff]", description):
                 description = ""
-            result.append(IntelligenceItem(f"GitHub 今日熱門專案：{repo}", f"https://github.com/{repo}", self.name, utc_now(), description, 0, "GitHub"))
+            result.append(IntelligenceItem(f"GitHub 今日熱門專案：{repo}", f"https://github.com/{repo}", self.name, utc_now(), description, 0, "GitHub", repo_description=original_description))
             if len(result) >= 12:
                 break
         if not result:
