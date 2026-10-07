@@ -34,6 +34,15 @@ class GuideKnowledgeTests(unittest.TestCase):
             self.assertIn(label, row)
         self.assertNotIn("<img", row)
 
+    def test_cloud_trending_types_have_honest_guides(self) -> None:
+        descriptions = ("Reverse engineer anything with agents, from app behavior down to native binaries.",
+                        "Tool for automatic PS5 executables porting to Linux and Windows")
+        for description in descriptions:
+            guide = repository_guide(rank_items([self.item(description)])[0])
+            self.assertTrue(guide.matched)
+            self.assertEqual(len(guide.steps), 3)
+            self.assertIn("工程師", guide.audience)
+
     def test_evidence_is_escaped_and_not_a_free_usage_promise(self) -> None:
         cluster = rank_items([self.item('coding assistant <script>alert(1)</script>')])[0]
         row = HtmlPreviewRenderer()._briefing(cluster)
