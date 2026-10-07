@@ -12,9 +12,9 @@ class DemoSource:
         now = datetime.now(timezone.utc)
         return [
             IntelligenceItem("Codex 與 GPT 工作流程的新整合", "https://example.com/codex", "GitHub", now - timedelta(hours=2), "AI 工具的整合可能讓你未來少切換幾個服務，就能完成更多工作。", 1250, "AI／Codex"),
-            IntelligenceItem("GitHub 今日熱門專案：openai/codex", "https://github.com/openai/codex", "GitHub Trending", now - timedelta(hours=2), "今天在 GitHub 熱門榜出現的開源專案；是否值得點開，請依名稱和原始介紹判斷。", 700, "GitHub"),
-            IntelligenceItem("GitHub 今日熱門專案：browser-use/browser-use", "https://github.com/browser-use/browser-use", "GitHub Trending", now - timedelta(hours=2), "能讓 AI 操作瀏覽器的開源工具近期受到開發者注意。", 620, "GitHub"),
-            IntelligenceItem("GitHub 今日熱門專案：unclecode/crawl4ai", "https://github.com/unclecode/crawl4ai", "GitHub Trending", now - timedelta(hours=3), "公開網頁整理與內容擷取工具，適合快速知道用途後再決定是否深入。", 580, "GitHub"),
+            IntelligenceItem("GitHub 今日熱門專案：openai/codex", "https://github.com/openai/codex", "GitHub Trending", now - timedelta(hours=2), "", 700, "GitHub", repo_description="A coding agent that runs locally on your computer."),
+            IntelligenceItem("GitHub 今日熱門專案：browser-use/browser-use", "https://github.com/browser-use/browser-use", "GitHub Trending", now - timedelta(hours=2), "", 620, "GitHub", repo_description="Browser automation for AI agents."),
+            IntelligenceItem("GitHub 今日熱門專案：unclecode/crawl4ai", "https://github.com/unclecode/crawl4ai", "GitHub Trending", now - timedelta(hours=3), "", 580, "GitHub", repo_description="Web crawling and scraping for AI."),
             IntelligenceItem("萊爾富桃子水引發搶購與到貨討論", "https://example.com/peach-water", "Google News", now - timedelta(hours=2), "便利商店限量新品如果大量缺貨、開箱或交換到貨情報，通常就是正在出圈的生活流行。", 0, "年輕人流行"),
             IntelligenceItem("年輕人用已讀與貼圖取代長篇溝通", "https://example.com/young-communication", "Google News", now - timedelta(hours=4), "這類話題反映社群溝通習慣改變，適合先了解現象，不把單一文章當成整個世代。", 0, "年輕人流行"),
             IntelligenceItem("近期爆紅的國內外網美打卡景點", "https://example.com/trending-spots", "Google News", now - timedelta(hours=5), "整理近期社群反覆出現的拍照地點，方便判斷是否值得排進旅遊行程。", 0, "年輕人流行"),
