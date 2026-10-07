@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.25 - 2026-10-07
+
+- GitHub 新增依作者簡介分類的白話用途、例子、概念流程與上手門檻；未知用途不猜、不放假截圖。
+- 冷知識新增三則每日輪替，六則人工核對的一手出處知識庫，標示非即時新聞。
+- 保留十個原頻道；Markdown、文件與驗收測試同步更新。48 項 Python 測試通過。
+
 ## 0.9.24 - 2026-10-06
 
 - 即時抽查修正 GitHub Trending 全頁連結誤判：只讀取榜單 article 的 repository heading，排除 sponsors/explore、trending/developers 等導覽連結；驗收測試增至 42 項。
@@ -214,3 +220,4 @@
 
 - 建立 Sprint 1 MVP：Demo/Live、四來源 plugin、篩選、跨來源排名、Markdown 與 HTML 預覽。
 - 新增啟動腳本、測試與完整基礎操作文件。
+
