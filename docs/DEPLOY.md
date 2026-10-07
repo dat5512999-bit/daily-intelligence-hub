@@ -17,3 +17,9 @@ Sprint 1 是本機命令列工具，無伺服器部署需求。若要每日產�
 0.9.24 執行命令為 `python main.py --live --restore-published-state`。必須上傳 `app/output/feedback.js`，renderer 會把它內嵌到報告。完整部署 `reports/`，包含新產生的 `state.json`。第一次部署沒有上一份比較紀錄時是正常狀態；下一輪開始比較。靜態 state.json 只含公開文章雜湊，不含手機收藏。
 
 main 分支更新也會觸發部署；部署前先執行 Python 驗收測試，失敗時停止發布。分支上傳完成後一次合併，避免線上使用半套程式。
+
+## 0.9.25｜GitHub 使用指南與冷知識（2026-10-07）
+
+更新時必須一併上傳 app/analyzer/github_guide.py、app/sources/knowledge.py 及呼叫它們的程式，不能只更新 HTML renderer。沿用既有 Pages workflow；本機完成不等於 GitHub Pages 已上線，請確認最新部署成功及公開頁面內容。
+
+限制：GitHub 使用例子是用途分類說明，非全文翻譯、實測或免費使用保證；冷知識目前六則每日輪替三則，非即時新聞。未引入資料庫、登入或付費服務。
