@@ -37,7 +37,7 @@ class GenerateDailyReport:
         cleaned = filter_items(collected)
         relevant = [
             item for item in cleaned
-            if self._profile is None or self._profile.matches(item) or item.source in DISCOVERY_SOURCES
+            if self._profile is None or self._profile.matches(item) or item.source in DISCOVERY_SOURCES or item.source == "冷知識精選"
         ]
         # Nine personal channels × three items, plus room for discovery signals.
         # The renderer still stays compact because every channel is collapsed.
