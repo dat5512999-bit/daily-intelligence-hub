@@ -17,6 +17,7 @@ class IntelligenceItem:
     engagement: int = 0
     category: str = "科技"
     tags: tuple[str, ...] = ()
+    repo_description: str = ""
 
 
 @dataclass(frozen=True)
@@ -103,6 +104,8 @@ class IntelligenceCluster:
     def source_type_label(self) -> str:
         """Show what kind of evidence a card is based on, not just its source name."""
         source_set = set(self.sources)
+        if "冷知識精選" in source_set:
+            return "有出處的知識精選 · 非即時新聞"
         if len(source_set) >= 2:
             return "跨來源整理"
         if "觀光署活動" in source_set:
@@ -147,7 +150,7 @@ class DailyReport:
     @property
     def source_count(self) -> int:
         """Count the distinct sources that actually made it into the report."""
-        return len({source for cluster in self.clusters for source in cluster.sources})
+        return len({source for cluster in self.clusters for source in cluster.sources if source != "冷知識精選"})
 
     @property
     def health_label(self) -> str:
