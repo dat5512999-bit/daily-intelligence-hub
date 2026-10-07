@@ -38,3 +38,11 @@
 - [ ] 新 URL 與既有內容改動分別計數；來源全失敗不清掉歷史基準。
 - [ ] 手機 390px 無橫向溢出，收藏按鈕可點；不顯示裝飾大空框。
 - [ ] 超過 90 分鐘顯示排程可能延遲，而不是保證已更新。
+
+## 0.9.25｜GitHub 使用指南與冷知識（2026-10-07）
+
+新增手機驗收：`node tests/test_guides.cjs`（Demo）及 `node tests/test_guides.cjs reports_live_check/preview.html`（Live），檢查兩區皆三則、無假圖、無橫向溢出與無 JavaScript 錯誤。`node tests/test_feedback.cjs` 檢查原有收藏與偏好未回歸。三項瀏覽器驗收均已通過；僅開發測試需 Node／Playwright，正式執行無額外依賴。
+
+執行 python -m unittest discover -s tests -v：48 項測試。新增驗收：GitHub 不靠名稱猜用途、官方文字安全跳脫、三步概念示意非假截圖、三則冷知識同日穩定次日輪替、不被興趣設定過濾、不把離線知識算成即時來源、Markdown 同步輸出。手機確認兩區均為 3／3，無橫向溢出。
+
+限制：GitHub 使用例子是用途分類說明，非全文翻譯、實測或免費使用保證；冷知識目前六則每日輪替三則，非即時新聞。未引入資料庫、登入或付費服務。
