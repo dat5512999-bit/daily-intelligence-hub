@@ -7,6 +7,7 @@ from urllib.parse import quote
 
 from app.domain.models import DailyReport
 from app.output.time_format import format_taiwan_time
+from app.analyzer.github_guide import repository_guide
 
 
 class MarkdownRenderer:
@@ -43,6 +44,19 @@ class MarkdownRenderer:
         unverified = [cluster for cluster in report.clusters if cluster.signal_label == "社群正在討論"]
         if unverified:
             lines.extend(["## 流行但先別急著相信", "以下內容反映社群熱度，不代表事件已被證實。", *[f"- [{cluster.title}]({cluster.primary_url})" for cluster in unverified], ""])
+        github = [cluster for cluster in report.clusters if cluster.category == "GitHub"]
+        if github:
+            lines.extend(["## GitHub 白話使用指南", "依作者簡介分類；例子與流程是概念示意，不是實測或操作保證。", ""])
+            for cluster in github:
+                guide = repository_guide(cluster)
+                lines.extend([f"### {cluster.title}", f"用在哪裡：{guide.purpose}", f"使用例子：{guide.example}",
+                              f"概念流程：{' → '.join(guide.steps) or '尚無足夠資訊'}", f"上手門檻：{guide.audience}",
+                              f"[官方說明翻成繁中]({self._translation_url(cluster.primary_url)})", ""])
+        knowledge = [cluster for cluster in report.clusters if cluster.category == "冷知識"]
+        if knowledge:
+            lines.extend(["## 冷知識 · 每天三則", "人工整理的知識精選，非即時新聞；出處核對：2026-10-07。", ""])
+            for cluster in knowledge:
+                lines.extend([f"### {cluster.title}", cluster.summary, f"[核對出處]({cluster.primary_url})", ""])
         if report.source_errors:
             lines.extend(["## 來源警示", *[f"- {error}" for error in report.source_errors], ""])
         if not report.clusters:
