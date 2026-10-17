@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
   schedule:
-    # Two off-peak attempts per hour. GitHub scheduled jobs can be delayed,
-    # so :17 and :47 make the free Pages report more resilient than one run.
-    - cron: "17,47 * * * *"
+    # Two attempts per hour at :18 and :48. A small cron change re-registers
+    # the schedule if GitHub stops emitting scheduled events while manual runs work.
+    - cron: "18,48 * * * *"
   workflow_dispatch:
 
 permissions:
