@@ -179,15 +179,15 @@ class ReportTests(unittest.TestCase):
         from pathlib import Path
 
         workflow = Path(".github/workflows/daily-report.yml").read_text(encoding="utf-8")
-        self.assertIn('cron: "17,47 * * * *"', workflow)
+        self.assertIn('cron: "18,48 * * * *"', workflow)
 
     def test_next_schedule_label_matches_twice_hourly_workflow(self) -> None:
         renderer = HtmlPreviewRenderer()
         now = datetime(2026, 7, 12, 10, 20, tzinfo=timezone.utc)
-        self.assertEqual(renderer._next_scheduled_time(now).minute, 47)
-        at_second_slot = datetime(2026, 7, 12, 10, 47, tzinfo=timezone.utc)
+        self.assertEqual(renderer._next_scheduled_time(now).minute, 48)
+        at_second_slot = datetime(2026, 7, 12, 10, 48, tzinfo=timezone.utc)
         next_hour = renderer._next_scheduled_time(at_second_slot)
-        self.assertEqual((next_hour.hour, next_hour.minute), (11, 17))
+        self.assertEqual((next_hour.hour, next_hour.minute), (11, 18))
 
     def test_feedback_is_scoped_to_one_dashboard_item(self) -> None:
         now = datetime.now(timezone.utc)
