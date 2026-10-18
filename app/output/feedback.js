@@ -101,7 +101,7 @@
       const remove = document.createElement("button");
       remove.dataset.removeSaved = id;
       remove.textContent = "取消收藏";
-      row.append(link, " ", remove);
+      row.append(remove);
       saved.append(row);
     }
     if (!saved.children.length) saved.textContent = "目前還沒有收藏。想追的作品或喜歡的小提醒，都可以收在這裡。";
