@@ -12,7 +12,9 @@ class Source(Protocol):
 
 `DailyReport` 另提供 `source_count`、`health_label`、`health_note`，輸出層必須使用這些欄位提示資料品質，不得自行假設 Live Mode 就代表全部來源成功。
 
-`IntelligenceCluster.image_url` 目前只對 YouTube 影片產生官方縮圖；其他來源回傳空字串。
+`IntelligenceItem.image_url` 可選擇保存 RSS 項目明確提供的媒體圖片；僅接受 HTTPS 且沒有帳密的 URL。`IntelligenceCluster.image_url` 優先使用群組內來源附圖，否則只對 YouTube 影片推導官方縮圖；沒有可信圖片回傳空字串。顯示失敗的圖片由前端移除。
+
+興趣設定將新作資訊拆為「新番動漫」、「Netflix 新劇」、「Disney+ 新劇」，使用 InterestNewsSource 的 Google News 公開 RSS 搜尋，不需 API Key。搜尋結果不保證平台完整片單或台灣可看性。另有 DailyBoostSource 依台灣日期離線輪替三則原創生活提醒。收藏透過現有 `daily-intelligence-preferences-v3` 的 `saved` 欄位儲存在本機瀏覽器，沒有伺服器 API；每日充電收藏會保留標題與可嘗試的小行動。
 
 ## 0.9.24 更新狀態與偏好
 

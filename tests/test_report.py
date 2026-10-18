@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from app.analyzer.filter import filter_items
@@ -143,6 +143,45 @@ class ReportTests(unittest.TestCase):
         self.assertIn("i.ytimg.com/vi/abc123", youtube.image_url)
         self.assertEqual(github.image_url, "")
         self.assertEqual(news.image_url, "")
+
+    def test_rss_image_is_used_only_when_feed_explicitly_supplies_https_image(self) -> None:
+        import xml.etree.ElementTree as element_tree
+
+        with_image = element_tree.fromstring('<item xmlns:media="http://search.yahoo.com/mrss/"><media:thumbnail url="https://cdn.example/poster.jpg"/></item>')
+        unsafe = element_tree.fromstring('<item xmlns:media="http://search.yahoo.com/mrss/"><media:content url="http://cdn.example/poster.jpg" medium="image"/></item>')
+        wrong_type = element_tree.fromstring('<item><enclosure url="https://cdn.example/movie.mp4" type="video/mp4"/></item>')
+        self.assertEqual(InterestNewsSource._feed_image(with_image), "https://cdn.example/poster.jpg")
+        self.assertEqual(InterestNewsSource._feed_image(unsafe), "")
+        self.assertEqual(InterestNewsSource._feed_image(wrong_type), "")
+
+    def test_source_image_preview_appears_on_the_item_and_fails_closed(self) -> None:
+        now = datetime.now(timezone.utc)
+        item = IntelligenceItem(
+            "Disney+ 新劇預告公布", "https://example.com/show", "Google News", now,
+            category="Netflix 新劇", image_url="https://cdn.example/show-poster.jpg",
+        )
+        cluster = rank_items([item])[0]
+        html = HtmlPreviewRenderer()._compact_row(cluster, 1, "test")
+        self.assertIn('src="https://cdn.example/show-poster.jpg"', html)
+        self.assertIn("onerror=\"this.remove()\"", html)
+        self.assertEqual(cluster.image_url, "https://cdn.example/show-poster.jpg")
+
+    def test_anime_and_streaming_categories_are_separate_and_can_be_saved(self) -> None:
+        now = datetime.now(timezone.utc)
+        releases = [
+            IntelligenceItem("秋季新番動畫開播整理", "https://example.com/anime", "Google News", now, category="新番動漫"),
+            IntelligenceItem("Netflix 台灣新劇公開首播日期", "https://example.com/netflix", "Google News", now, category="Netflix 新劇"),
+            IntelligenceItem("Disney+ 新影集公布上線時間", "https://example.com/disney", "Google News", now, category="Disney+ 新劇"),
+        ]
+        preview = HtmlPreviewRenderer().render(type("Report", (), {
+            "generated_at": now, "clusters": tuple(rank_items(releases)), "source_errors": (), "mode": "demo",
+            "source_count": 1, "health_label": "來源正常", "health_note": "測試",
+        })())
+        for label in ("🌸 新番動漫", "🎬 Netflix 新劇", "✨ Disney+ 新劇"):
+            self.assertIn(label, preview)
+        self.assertIn("加入想看清單", preview)
+        self.assertIn("我的想看清單", preview)
+        self.assertIn("Netflix 台灣新劇公開首播日期", preview)
 
     def test_report_continues_when_one_source_fails(self) -> None:
         report = GenerateDailyReport([DemoSource(), FailingSource()]).run("demo")
@@ -369,6 +408,15 @@ class ReportTests(unittest.TestCase):
         next_hour = InterestNewsSource._rotated_queries(("A", "B", "C", "D", "E", "F"), 1)
         self.assertEqual(first, ["A", "B", "C", "D", "E"])
         self.assertEqual(next_hour, ["B", "C", "D", "E", "F"])
+
+    def test_current_anime_season_and_year_are_resolved_from_taiwan_calendar(self) -> None:
+        profile = load_interest_profile()
+        category = next(row for row in profile.categories if row.name == "新番動漫")
+        taiwan = timezone(timedelta(hours=8))
+        autumn = InterestNewsSource._resolve_queries(category.queries, datetime(2026, 10, 18, tzinfo=taiwan))
+        winter = InterestNewsSource._resolve_queries(category.queries, datetime(2027, 1, 5, tzinfo=taiwan))
+        self.assertIn("2026 秋季新番 動畫 開播", autumn)
+        self.assertIn("2027 冬季新番 動畫 開播", winter)
 
     def test_game_query_window_is_not_only_palworld(self) -> None:
         profile = load_interest_profile()

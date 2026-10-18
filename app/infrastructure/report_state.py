@@ -21,6 +21,10 @@ def article_key(cluster: IntelligenceCluster) -> str:
     """Stable identity across layout changes; discard URL fragments only."""
     parsed = urlsplit(cluster.primary_url)
     url = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, ""))
+    if not url:
+        # Original offline prompts have no external source URL; their title and
+        # category form a stable identity without making unrelated prompts collide.
+        url = f"{cluster.category}\n{cluster.title}"
     return hashlib.sha256(url.encode("utf-8")).hexdigest()[:24]
 
 

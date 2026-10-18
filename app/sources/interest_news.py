@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as element_tree
 import re
+from datetime import datetime, timedelta, timezone
 from html import unescape
 from email.utils import parsedate_to_datetime
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 from app.domain.models import IntelligenceItem
 from app.infrastructure.http_client import clean_xml, get_text
@@ -17,6 +18,7 @@ from app.sources.base import utc_now
 class InterestNewsSource:
     name = "Google News"
     _queries_per_category = 5
+    _taiwan_timezone = timezone(timedelta(hours=8))
 
     def __init__(self, profile: InterestProfile) -> None:
         self._profile = profile
@@ -29,7 +31,8 @@ class InterestNewsSource:
         # without making dozens of simultaneous requests from GitHub Actions.
         hour_slot = utc_now().hour
         for category_index, category in enumerate(self._profile.categories):
-            queries = self._rotated_queries(category.queries, hour_slot + category_index)
+            resolved = self._resolve_queries(category.queries, datetime.now(self._taiwan_timezone))
+            queries = self._rotated_queries(resolved, hour_slot + category_index)
             for query in queries:
                 url = f"https://news.google.com/rss/search?q={quote_plus(query)}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant"
                 try:
@@ -48,10 +51,41 @@ class InterestNewsSource:
                     headline = title.rsplit(" - ", 1)[0].strip()
                     if headline in description or len(description) < 25:
                         description = ""
-                    result.append(IntelligenceItem(title, item.findtext("link", default=""), self.name, parsedate_to_datetime(published) if published else utc_now(), description, 0, category.name))
+                    result.append(IntelligenceItem(
+                        title,
+                        item.findtext("link", default=""),
+                        self.name,
+                        parsedate_to_datetime(published) if published else utc_now(),
+                        description,
+                        0,
+                        category.name,
+                        image_url=self._feed_image(item),
+                    ))
         if not result and failed_queries:
             raise RuntimeError("Google News 暫時回傳異常格式，已略過；下次更新會再嘗試。")
         return result
+
+    @staticmethod
+    def _feed_image(item: element_tree.Element) -> str:
+        """Read an image explicitly attached to an RSS item; never guess a URL.
+
+        Google News may include media:content, media:thumbnail, or an image
+        enclosure. Only HTTPS URLs with a hostname are accepted. This is a
+        best-effort preview, not a promise that a publisher keeps it available.
+        """
+        for element in item.iter():
+            if element.tag.rsplit("}", 1)[-1] not in {"content", "thumbnail", "enclosure"}:
+                continue
+            if element.get("medium") not in (None, "image"):
+                continue
+            mime_type = element.get("type", "").lower()
+            if mime_type and not mime_type.startswith("image/"):
+                continue
+            candidate = element.get("url", "").strip()
+            parsed = urlparse(candidate)
+            if parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password:
+                return candidate
+        return ""
 
     @classmethod
     def _rotated_queries(cls, queries: tuple[str, ...] | list[str], offset: int) -> list[str]:
@@ -68,3 +102,10 @@ class InterestNewsSource:
         # Query lists are intentionally interleaved by topic in interests.json,
         # so a rotating consecutive window contains several different subjects.
         return [queries[(start + index) % len(queries)] for index in range(size)]
+
+    @staticmethod
+    def _resolve_queries(queries: tuple[str, ...] | list[str], local_now: datetime) -> list[str]:
+        """Keep seasonal anime searches current without yearly config edits."""
+        month = local_now.month
+        season = "冬季" if month in (12, 1, 2) else "春季" if month in (3, 4, 5) else "夏季" if month in (6, 7, 8) else "秋季"
+        return [query.replace("__YEAR__", str(local_now.year)).replace("__SEASON__", season) for query in queries]

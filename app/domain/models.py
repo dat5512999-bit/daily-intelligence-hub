@@ -18,6 +18,7 @@ class IntelligenceItem:
     category: str = "科技"
     tags: tuple[str, ...] = ()
     repo_description: str = ""
+    image_url: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,10 @@ class IntelligenceCluster:
         anime_terms = ("re:zero", "從零開始", "無職轉生", "轉生史萊姆", "影之強者", "海賊王", "犬夜叉", "火影忍者", "我獨自升級", "實力至上主義", "盾之勇者", "進擊的巨人", "鬼滅之刃", "宮崎駿", "吉卜力", "周邊", "聖地巡禮")
         if any(word in text for word in anime_terms):
             return "動漫雷達：可能有新消息、周邊、聯動或聖地巡禮"
+        if self.category in {"新番動漫", "Netflix 新劇", "Disney+ 新劇"}:
+            return "追劇雷達：新作品消息；台灣上架日期以平台公告為準"
+        if self.category == "每日充電":
+            return "給自己一個小提醒：讀完可以試一個簡單做法"
         game_terms = ("幻獸帕魯", "palworld", "gta", "sf online", "special force", "地平線", "forza", "魔獸爭霸", "warcraft", "寒冰霸權", "寒冰爭霸", "steam", "電競", "巔峰對決")
         if any(word in text for word in game_terms):
             return "遊戲雷達：可能是新作、更新、玩家回流或社群討論"
@@ -96,6 +101,10 @@ class IntelligenceCluster:
             return "現在看｜和你的持股有關"
         if any(term in text for term in event_terms):
             return "有空看｜可能用得到的生活安排"
+        if self.category in {"新番動漫", "Netflix 新劇", "Disney+ 新劇"}:
+            return "有空看｜看看有沒有想追的新作品"
+        if self.category == "每日充電":
+            return "花 30 秒｜帶走一個今天能試的想法"
         if self.category in {"AI／Codex", "年輕人流行", "遊戲與電競", "動漫與娛樂", "運動焦點"}:
             return "值得看｜花 1 分鐘掌握重點"
         return "路過知道即可｜不必急著點開"
@@ -104,6 +113,10 @@ class IntelligenceCluster:
     def source_type_label(self) -> str:
         """Show what kind of evidence a card is based on, not just its source name."""
         source_set = set(self.sources)
+        if self.category in {"新番動漫", "Netflix 新劇", "Disney+ 新劇"}:
+            return self.category
+        if self.category == "每日充電":
+            return "每日想法 · 原創練習"
         if "冷知識精選" in source_set:
             return "有出處的知識精選 · 非即時新聞"
         if len(source_set) >= 2:
@@ -128,11 +141,16 @@ class IntelligenceCluster:
 
     @property
     def image_url(self) -> str:
-        """Use only source-owned images that can be derived without scraping artwork."""
-        item = self.items[0]
-        if item.source == "YouTube":
-            video_id = parse_qs(urlparse(item.url).query).get("v", [""])[0]
-            return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg" if video_id else ""
+        """Use only an HTTPS image supplied by its source or YouTube's official thumbnail."""
+        for item in self.items:
+            if item.image_url.startswith("https://"):
+                parsed = urlparse(item.image_url)
+                if parsed.hostname and not parsed.username and not parsed.password:
+                    return item.image_url
+            if item.source == "YouTube":
+                video_id = parse_qs(urlparse(item.url).query).get("v", [""])[0]
+                if video_id:
+                    return f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
         return ""
 
 
@@ -150,7 +168,7 @@ class DailyReport:
     @property
     def source_count(self) -> int:
         """Count the distinct sources that actually made it into the report."""
-        return len({source for cluster in self.clusters for source in cluster.sources if source != "冷知識精選"})
+        return len({source for cluster in self.clusters for source in cluster.sources if source not in {"冷知識精選", "每日充電精選"}})
 
     @property
     def health_label(self) -> str:

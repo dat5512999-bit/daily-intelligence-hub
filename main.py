@@ -25,6 +25,7 @@ from app.sources.taiwan_events import TaiwanTourismEventsSource
 from app.sources.trends import GoogleTrendsSource
 from app.sources.youtube import YouTubeSource
 from app.sources.knowledge import KnowledgeSource
+from app.sources.daily_boost import DailyBoostSource
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,6 +43,7 @@ def main() -> int:
     profile = load_interest_profile()
     sources = [DemoSource()] if args.demo else [InterestNewsSource(profile), TaiwanTourismEventsSource(), GitHubTrendingSource(), RedditSource(), HackerNewsSource(), YouTubeSource(), DcardSource(), GoogleTrendsSource(), TikTokTrendsSource()]
     sources.append(KnowledgeSource())
+    sources.append(DailyBoostSource())
     report = GenerateDailyReport(sources, profile).run(mode="demo" if args.demo else "live")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     state_path = args.output_dir / ("demo-state.json" if args.demo else "state.json")

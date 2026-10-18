@@ -27,6 +27,7 @@ CATEGORY_BONUS = {
     "台中好康與活動": 17,
     "GitHub": 16,
     "冷知識": -20,
+    "每日充電": -18,
 }
 CATEGORY_LIMIT = 3
 GAME_FAMILIES = {

@@ -1,5 +1,7 @@
 # 安裝手冊
 
+0.9.28 不新增套件、資料庫、登入或 API Key。新番、Netflix、Disney+ 沿用既有公開 RSS 更新流程；每日充電由內建原創內容輪替；收藏由報告內嵌的 `app/output/feedback.js` 在瀏覽器本機儲存。
+
 1. 安裝 [Python](https://www.python.org/downloads/) 3.9+，安裝時選擇加入 PATH。
 2. 解壓或複製本專案。
 3. 在專案目錄執行 `python main.py --demo`。

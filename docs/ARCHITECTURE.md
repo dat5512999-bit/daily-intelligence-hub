@@ -2,11 +2,14 @@
 
 ## 呈現層規則（0.9.18）
 
-`HtmlPreviewRenderer` 依情報性質挑選元件，而不是一律使用新聞卡：最重要一則為 Hero、突發在地消息為 Alert、搜尋與社群訊號為 Ranking，並固定保留使用者關注頻道的 Compact List。圖片僅由可用來源安全推導時產生：目前僅使用 YouTube 官方縮圖；其他來源維持文字資訊，避免錯圖、載入失敗與侵權風險。`filter_items` 會清除 RSS HTML，並略過未翻譯的英文 Reddit／Hacker News 貼文，避免它們進入繁中首頁。
+0.9.28 將追劇設定拆為「新番動漫」、「Netflix 新劇」、「Disney+ 新劇」，共用 Google News RSS adapter；新增 `DailyBoostSource`，依台灣日期離線提供三則原創提醒。提醒不計入即時來源數，不進新聞精選，可將標題與今天可試的小行動存在瀏覽器收藏中。沒有新增資料庫、API 或外部服務。
+
+`HtmlPreviewRenderer` 依情報性質挑選元件，而不是一律使用新聞卡：最重要一則為 Hero、突發在地消息為 Alert、搜尋與社群訊號為 Ranking，並固定保留使用者關注頻道的 Compact List。圖片只採 RSS 明確附圖或 YouTube 官方縮圖；失敗時自動移除，其他內容不依標題猜圖。`filter_items` 會清除 RSS HTML，並略過未翻譯的英文 Reddit／Hacker News 貼文，避免它們進入繁中首頁。
 
 ```mermaid
 flowchart LR
-  Sources["Sources：GitHub / Reddit / HN / Google News / Dcard / Trends / TikTok"] --> Normalize
+  Sources["Sources：GitHub / Reddit / HN / Google News（新番、Netflix、Disney+）/ Dcard / Trends / TikTok"] --> Normalize
+  DailyBoost["每日充電：原創短想法與小行動"] --> Normalize
   Normalize --> Filter
   Filter --> ClusterRanking["Cluster + Category-balanced Ranking"]
   ClusterRanking --> Summary
@@ -14,6 +17,7 @@ flowchart LR
   HealthCheck --> Output
   Output --> Markdown
   Output --> HtmlPreview["Mobile HTML / PWA"]
+  HtmlPreview --> Saved["本機收藏：想看作品與充電提醒"]
 ```
 
 `domain` 保留商業模型與介面；`sources` 是可插拔 adapter；`analyzer` 不直接了解網路；`output` 不直接抓來源。此分層維持低耦合並可於後續 Sprint 新增 LINE、Notion 或 Email renderer。

@@ -53,7 +53,8 @@ def filter_items(items: list[IntelligenceItem]) -> list[IntelligenceItem]:
     for item in items:
         clean_item = replace(item, title=_plain_text(item.title), summary=_plain_text(item.summary))
         key = (clean_item.source, clean_item.url)
-        if (not clean_item.title.strip() or not clean_item.url.startswith("http") or key in seen
+        has_url = clean_item.url.startswith("http") or (clean_item.source == "每日充電精選" and clean_item.url.startswith("daily-idea://"))
+        if (not clean_item.title.strip() or not has_url or key in seen
                 or _has_low_context(clean_item) or _is_unreadable_foreign_post(clean_item)):
             continue
         seen.add(key)

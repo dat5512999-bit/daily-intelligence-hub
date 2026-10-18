@@ -22,7 +22,8 @@ class MarkdownRenderer:
         change_time = format_taiwan_time(report.last_content_change_at) if report.last_content_change_at else "尚未建立可比較紀錄"
         change_note = f"新增 {report.new_item_count} 則、內容改動 {report.changed_item_count} 則" if report.comparison_available else "首次建立比較紀錄，尚不推算新增數"
         lines[2:2] = [f"最後檢查：{format_taiwan_time(report.generated_at)}", f"最後新增／改動：{change_time}", change_note]
-        for index, cluster in enumerate(report.clusters[:3], 1):
+        news_picks = [cluster for cluster in report.clusters if cluster.category != "每日充電"][:3]
+        for index, cluster in enumerate(news_picks, 1):
             lines.extend([f"### {index}. {cluster.title}", f"建議：{cluster.decision_label}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"{cluster.source_type_label} ｜ {cluster.signal_label} ｜ {cluster.why_it_appeared}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
         discovery = [cluster for cluster in report.clusters if cluster.category in {"社群冷門雷達", "搜尋趨勢", "短影音趨勢"} or cluster.signal_label in {"社群正在討論", "很多人正在搜尋"}]
         if discovery:
@@ -30,16 +31,16 @@ class MarkdownRenderer:
             for index, cluster in enumerate(discovery[:5], 1):
                 lines.extend([f"### {index}. {cluster.title}", f"建議：{cluster.decision_label}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"來源：{'、'.join(cluster.sources)} ｜ {cluster.source_type_label} ｜ {cluster.signal_label}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
         lines.extend(["## 新聞與其他趨勢（有空再看）", ""])
-        for index, cluster in enumerate(report.clusters, 1):
+        for index, cluster in enumerate((item for item in report.clusters if item.category != "每日充電"), 1):
             lines.extend([f"### {index}. {cluster.title}", f"建議：{cluster.decision_label}", f"你可能會在意：{cluster.attention_label}", f"白話重點：{cluster.summary}", f"來源：{'、'.join(cluster.sources)} ｜ {cluster.source_type_label} ｜ {cluster.signal_label}", f"[看原文]({cluster.primary_url}) ｜ [翻成繁中閱讀]({self._translation_url(cluster.primary_url)})", ""])
         categories: dict[str, list[str]] = defaultdict(list)
         for cluster in report.clusters:
-            categories[cluster.category].append(f"- [{cluster.title}]({cluster.primary_url})")
-        for category in ("社群冷門雷達", "搜尋趨勢", "短影音趨勢", "AI／Codex", "年輕人流行", "遊戲與電競", "動漫與娛樂", "運動焦點", "台中現在要注意", "台中好康與活動", "股票與市場", "AI", "GitHub", "科技", "商業", "全球重要事件", "健康生活", "美食生活", "旅遊生活", "娛樂文化", "影音生活", "生活話題", "職場生活", "Dcard 熱門"):
+            categories[cluster.category].append(f"- {cluster.title}" if cluster.category == "每日充電" else f"- [{cluster.title}]({cluster.primary_url})")
+        for category in ("社群冷門雷達", "搜尋趨勢", "短影音趨勢", "AI／Codex", "年輕人流行", "遊戲與電競", "動漫與娛樂", "新番動漫", "Netflix 新劇", "Disney+ 新劇", "運動焦點", "台中現在要注意", "台中好康與活動", "股票與市場", "每日充電", "AI", "GitHub", "科技", "商業", "全球重要事件", "健康生活", "美食生活", "旅遊生活", "娛樂文化", "影音生活", "生活話題", "職場生活", "Dcard 熱門"):
             if categories[category]:
                 lines.extend([f"## {category}", *categories[category], ""])
-        if report.clusters:
-            top = report.clusters[0]
+        if news_picks:
+            top = news_picks[0]
             lines.extend(["## 今日最值得研究", f"[{top.title}]({top.primary_url})", top.summary, ""])
         unverified = [cluster for cluster in report.clusters if cluster.signal_label == "社群正在討論"]
         if unverified:
@@ -57,6 +58,11 @@ class MarkdownRenderer:
             lines.extend(["## 冷知識 · 每天三則", "人工整理的知識精選，非即時新聞；出處核對：2026-10-07。", ""])
             for cluster in knowledge:
                 lines.extend([f"### {cluster.title}", cluster.summary, f"[核對出處]({cluster.primary_url})", ""])
+        daily_boost = [cluster for cluster in report.clusters if cluster.category == "每日充電"]
+        if daily_boost:
+            lines.extend(["## 每日充電 · 30 秒", "原創生活提醒與小練習，不是名人語錄或心理諮商。", ""])
+            for cluster in daily_boost:
+                lines.extend([f"### {cluster.title}", cluster.summary, ""])
         if report.source_errors:
             lines.extend(["## 來源警示", *[f"- {error}" for error in report.source_errors], ""])
         if not report.clusters:
