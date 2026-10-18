@@ -1,6 +1,6 @@
 # 安裝手冊
 
-0.9.28 不新增套件、資料庫、登入或 API Key。新番、Netflix、Disney+ 沿用既有公開 RSS 更新流程；每日充電由內建原創內容輪替；收藏由報告內嵌的 `app/output/feedback.js` 在瀏覽器本機儲存。
+0.9.29 不新增套件、資料庫、登入或 API Key。新番、Netflix、Disney+ 沿用既有公開 RSS 更新流程；Live 報告可從少量 Google News 文章出版頁讀取來源提供的預覽圖；每日充電由內建原創內容輪替；收藏由報告內嵌的 `app/output/feedback.js` 在瀏覽器本機儲存。圖片擷取是盡力而為；來源拒絕或無圖時仍可正常使用文字報告。
 
 1. 安裝 [Python](https://www.python.org/downloads/) 3.9+，安裝時選擇加入 PATH。
 2. 解壓或複製本專案。

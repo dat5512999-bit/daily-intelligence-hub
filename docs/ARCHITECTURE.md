@@ -4,7 +4,7 @@
 
 0.9.28 將追劇設定拆為「新番動漫」、「Netflix 新劇」、「Disney+ 新劇」，共用 Google News RSS adapter；新增 `DailyBoostSource`，依台灣日期離線提供三則原創提醒。提醒不計入即時來源數，不進新聞精選，可將標題與今天可試的小行動存在瀏覽器收藏中。沒有新增資料庫、API 或外部服務。
 
-`HtmlPreviewRenderer` 依情報性質挑選元件，而不是一律使用新聞卡：最重要一則為 Hero、突發在地消息為 Alert、搜尋與社群訊號為 Ranking，並固定保留使用者關注頻道的 Compact List。圖片只採 RSS 明確附圖或 YouTube 官方縮圖；失敗時自動移除，其他內容不依標題猜圖。`filter_items` 會清除 RSS HTML，並略過未翻譯的英文 Reddit／Hacker News 貼文，避免它們進入繁中首頁。
+`HtmlPreviewRenderer` 依情報性質挑選元件，而不是一律使用新聞卡：最重要一則為 Hero、突發在地消息為 Alert、搜尋與社群訊號為 Ranking，並固定保留使用者關注頻道的 Compact List。圖片先採 RSS／Dcard 貼文明確附圖；`enrich_preview_images` 對最多十個不同分類的 Google News 原文頁平行讀取出版者宣告的 Open Graph／Twitter 圖片，使用 HTTPS、公開網域、重新導向與大小限制。YouTube 使用官方縮圖；任何圖片失效即隱藏，不依標題猜圖、不使用無關素材。`filter_items` 會清除 RSS HTML，並略過未翻譯的英文 Reddit／Hacker News 貼文，避免它們進入繁中首頁。
 
 ```mermaid
 flowchart LR
@@ -12,7 +12,8 @@ flowchart LR
   DailyBoost["每日充電：原創短想法與小行動"] --> Normalize
   Normalize --> Filter
   Filter --> ClusterRanking["Cluster + Category-balanced Ranking"]
-  ClusterRanking --> Summary
+  ClusterRanking --> PreviewImages["RSS/Dcard 附圖；限量讀取出版者圖片中繼資料"]
+  PreviewImages --> Summary
   Summary --> HealthCheck["資料品質狀態"]
   HealthCheck --> Output
   Output --> Markdown

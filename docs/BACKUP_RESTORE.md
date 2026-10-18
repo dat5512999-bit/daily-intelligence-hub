@@ -1,6 +1,6 @@
 # 備份與還原手冊
 
-0.9.28 的新番、Netflix、Disney+ 查詢在 `config/interests.json`；每日充電內容在 `app/sources/daily_boost.py`。報告本身不保存收藏。想看清單和充電提醒存於裝置瀏覽器 localStorage，沒有跨裝置同步或雲端備份，清除網站資料可能使收藏遺失。
+0.9.29 的預覽圖片擷取邏輯在 `app/sources/preview_images.py`，Dcard 貼文媒體解析在 `app/sources/dcard.py`；新番、Netflix、Disney+ 查詢在 `config/interests.json`；每日充電內容在 `app/sources/daily_boost.py`。報告本身不保存收藏。想看清單和充電提醒存於裝置瀏覽器 localStorage，沒有跨裝置同步或雲端備份，清除網站資料可能使收藏遺失。
 
 備份整個專案資料夾，特別是 `config/`、`.github/workflows/` 與設定檔。0.9.24 起另備份 `reports/state.json`，才能保留更新比較歷史；缺少它不會阻止執行，但會重新建立基準。Demo 紀錄為 `reports/demo-state.json`，與 Live 分開。
 

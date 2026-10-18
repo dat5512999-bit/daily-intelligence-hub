@@ -154,6 +154,14 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(InterestNewsSource._feed_image(unsafe), "")
         self.assertEqual(InterestNewsSource._feed_image(wrong_type), "")
 
+    def test_dcard_uses_only_its_own_image_media(self) -> None:
+        self.assertEqual(
+            DcardSource._post_image({"mediaMeta": [{"type": "image", "url": "https://megapx-assets.dcard.tw/images/abc.jpg"}]}),
+            "https://megapx-assets.dcard.tw/images/abc.jpg",
+        )
+        self.assertEqual(DcardSource._post_image({"mediaMeta": [{"type": "video", "url": "https://megapx-assets.dcard.tw/video.mp4"}]}), "")
+        self.assertEqual(DcardSource._post_image({"mediaMeta": [{"type": "image", "url": "https://evil.example/image.jpg"}]}), "")
+
     def test_source_image_preview_appears_on_the_item_and_fails_closed(self) -> None:
         now = datetime.now(timezone.utc)
         item = IntelligenceItem(

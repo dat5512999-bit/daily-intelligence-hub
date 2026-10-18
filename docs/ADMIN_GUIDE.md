@@ -1,8 +1,8 @@
 # 管理者手冊
 
-## 0.9.28 新番與每日充電
+## 0.9.29 圖片速覽、新番與每日充電
 
-「新番動漫」、「Netflix 新劇」、「Disney+ 新劇」各自設定查詢與分類關鍵字於 `config/interests.json`，沿用 Google News RSS，不需憑證。勿將搜尋摘要描述成官方完整片單；台灣上架日需回平台公告確認。RSS 圖片僅使用來源明確提供的 HTTPS 圖片。
+「新番動漫」、「Netflix 新劇」、「Disney+ 新劇」各自設定查詢與分類關鍵字於 `config/interests.json`，沿用 Google News RSS，不需憑證。勿將搜尋摘要描述成官方完整片單；台灣上架日需回平台公告確認。圖片先用 RSS／Dcard 貼文明確附圖；Live 報告對最多十個不同分類的 Google News 文章嘗試讀取出版頁 `og:image`／`twitter:image`，僅接受公開 HTTPS 網址。`app/sources/preview_images.py` 限制每輪頁數、並行數、逾時、回應大小與重新導向；失敗只略過圖片，不中斷報告。勿改成依標題拼圖網址或無來源庫存圖。
 
 「每日充電」的原創提醒位於 `app/sources/daily_boost.py` 的 `IDEAS`，目前 21 則，每天三則，七天一輪。新增內容應保持白話、包含可選擇的小行動，不可冒充名人引言、醫療建議或保證改善關係；補上輪替測試。其來源不計入即時情報來源數。
 

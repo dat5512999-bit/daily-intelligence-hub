@@ -7,6 +7,7 @@ from app.analyzer.ranking import rank_items
 from app.domain.models import DailyReport, IntelligenceItem
 from app.infrastructure.interests import InterestProfile
 from app.domain.ports import Source
+from app.sources.preview_images import enrich_preview_images
 
 DISCOVERY_SOURCES = {"Dcard", "Google 熱門搜尋", "TikTok", "Reddit"}
 
@@ -39,6 +40,11 @@ class GenerateDailyReport:
             item for item in cleaned
             if self._profile is None or self._profile.matches(item) or item.source in DISCOVERY_SOURCES or item.source in {"冷知識精選", "每日充電精選"}
         ]
+        # RSS feeds often omit media tags. For a small, category-diverse set,
+        # use only the image the original publisher declares in its page metadata.
+        # This is best-effort and must never block the text report.
+        if mode == "live":
+            relevant = enrich_preview_images(relevant)
         # Nine personal channels × three items, plus room for discovery signals.
         # The renderer still stays compact because every channel is collapsed.
         category_capacity = (len(self._profile.categories) * 3 + 9) if self._profile else 36

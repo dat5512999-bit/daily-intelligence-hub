@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from app.domain.models import IntelligenceItem
 from app.infrastructure.http_client import get_text
@@ -22,8 +23,26 @@ class DcardSource:
             excerpt = str(post.get("excerpt") or "")
             category = self._category(str(post.get("forumName") or ""), title, excerpt)
             engagement = int(post.get("likeCount") or 0) + int(post.get("commentCount") or 0) * 3
-            result.append(IntelligenceItem(title, f"https://www.dcard.tw/f/{post.get('forumAlias', '')}/p/{post.get('id', '')}", self.name, datetime.fromisoformat(str(post.get("createdAt")).replace("Z", "+00:00")) if post.get("createdAt") else datetime.now(timezone.utc), excerpt, engagement, category))
+            result.append(IntelligenceItem(title, f"https://www.dcard.tw/f/{post.get('forumAlias', '')}/p/{post.get('id', '')}", self.name, datetime.fromisoformat(str(post.get("createdAt")).replace("Z", "+00:00")) if post.get("createdAt") else datetime.now(timezone.utc), excerpt, engagement, category, image_url=self._post_image(post)))
         return result
+
+    @staticmethod
+    def _post_image(post: dict[str, object]) -> str:
+        """Use a Dcard post's own image media; never guess artwork from its title."""
+        media = post.get("mediaMeta")
+        if not isinstance(media, list):
+            return ""
+        for entry in media:
+            if not isinstance(entry, dict) or entry.get("type") not in (None, "image"):
+                continue
+            for key in ("url", "normalizedUrl"):
+                candidate = str(entry.get(key) or "").strip()
+                parsed = urlparse(candidate)
+                host = (parsed.hostname or "").lower()
+                if (parsed.scheme == "https" and host.endswith(".dcard.tw")
+                        and not parsed.username and not parsed.password):
+                    return candidate
+        return ""
 
     @staticmethod
     def _fetch_popular_posts() -> list[dict[str, object]]:

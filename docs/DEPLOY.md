@@ -1,6 +1,6 @@
 # 部署手冊
 
-0.9.28 部署時須一併更新程式、設定、測試與文件，包含 `config/interests.json`、`app/sources/daily_boost.py`、`app/domain/models.py`、`app/output/html_preview.py` 與 `app/output/feedback.js`，並由 Actions 重新產生報告。新番動漫、Netflix、Disney+ 是獨立頻道；每日充電為原創離線內容。沒有新增 API Key 或付費服務。
+0.9.29 部署時須一併更新程式、設定、測試與文件，包含 `app/sources/preview_images.py`、`app/application/generate_daily_report.py` 和圖片驗收測試。報告在 Live 生成時最多讀取十篇來源文章的圖片中繼資料；沒有新增 API Key 或付費服務。請確認 Actions 的 build 與 deploy 都成功。
 
 Sprint 1 是本機命令列工具，無伺服器部署需求。若要每日產生，可在作業系統排程器建立工作：工作目錄設為專案根目錄，命令為 `python main.py --live`。
 
